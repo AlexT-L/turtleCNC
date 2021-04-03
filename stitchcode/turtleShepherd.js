@@ -53,6 +53,15 @@ TurtleShepherd.prototype.clear = function() {
 	this.penSize = 1;
     this.newPenSize = 0;
 
+    
+    // New Gcode additions
+    this.spindleSpeed = 10000;
+    if (this.metric)
+        this.penDepth = -10;
+    else
+        this.penDepth = -0.5;
+     
+
 };
 
 TurtleShepherd.prototype.toggleMetric = function() {
@@ -91,6 +100,7 @@ TurtleShepherd.prototype.getJumpCount = function() {
     return this.jumpCount;
 };
 
+/*
 TurtleShepherd.prototype.getTooLongCount = function() {
     return this.tooLongCount;
 };
@@ -110,14 +120,15 @@ TurtleShepherd.prototype.getDensityWarningStr = function() {
 	else
 		return "";
 };
+*/
 
 TurtleShepherd.prototype.getDimensions = function() {
 
 	if (this.metric) {
-		//c = 1;
-		//unit = "mm";
-		c = 0.1
-		unit = "cm";
+		c = 1;
+		unit = "mm";
+		//c = 0.1
+		//unit = "cm";
 	} else {
 		c = 0.03937;
 		unit = "in";
@@ -128,13 +139,13 @@ TurtleShepherd.prototype.getDimensions = function() {
 };
 
 TurtleShepherd.prototype.getMetricWidth = function() {
-	c = 0.1
+	c = 1
 	return ((this.maxX - this.minX)/ this.pixels_per_millimeter * c).toFixed(2).toString();
 };
 
 
 TurtleShepherd.prototype.getMetricHeight = function() {
-	c = 0.1
+	c = 1
 	return((this.maxY - this.minY)/ this.pixels_per_millimeter * c).toFixed(2).toString();
 };
 
@@ -159,6 +170,9 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
                 "x":x1,
                 "y":y1,
                 "penDown":penState,
+                
+                // New gcode additions
+                "penDepth":this.penDepth,
             }
         );
         this.density[Math.round(x1) + "x" + Math.round(y1)] = 1;
@@ -229,6 +243,28 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
 
 	this.lastX = x2;
 	this.lastY = y2;
+};
+
+TurtleShepherd.prototype.setCutDepth = function(s) {
+	this.newCutDepth = s;
+};
+
+TurtleShepherd.prototype.pushCutDepthNow = function() {
+	n = this.newCutDepth;
+	o = this.cutDepth;
+
+	if (n == o) {
+		this.newCutDepth = false;
+		return;
+	}
+    this.cache.push(
+        {
+            "cmd":"cutdepth",
+            "cutdepth": n
+        }
+    );
+	this.cutDepth = this.newCutDepth;
+    this.newCutDepth = false;
 };
 
 TurtleShepherd.prototype.setDefaultColor= function(color) {
@@ -340,6 +376,32 @@ TurtleShepherd.prototype.undoStep = function() {
 		}
 	}
 };
+
+
+TurtleShepherd.prototype.toGcode = function() {
+
+    var gcodeStr = "$X\n"; // Unlock
+    gcodeStr += "%H\n"; // Send to Home
+    gcodeStr += "G0 X0 Y0 Z-10\n"; // Send to origin to prepare for cut
+    /*
+    penDepthChanged = false;
+    penDepth = this.pendDepth;
+    hasFirst = false;
+
+    for (var i=0; i < this.cache.length; i++) {
+        if (this.cache[i].cmd == "color" && !this.ignoreColors) {
+    		color = this.cache[i].color;
+        } else if (this.cache[i].cmd == "pendepth") {
+			penDepth = this.cache[i].pendepth;
+			if (hasFirst) penDepthChanged = true;
+\       } else if (this.cache[i].cmd == "move") {
+            
+        }
+    }
+    */
+    return gcodeStr;
+};
+
 
 TurtleShepherd.prototype.toSVG = function() {
 

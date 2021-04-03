@@ -32,7 +32,7 @@ IDE_Morph.prototype.createLogo = function () {
 	this.originalCreateLogo();
 	//if (MorphicPreferences.isFlat) {
 	// we are always flat!
-	this.logo.texture = 'stitchcode/turtlestitch_logo.png';
+	this.logo.texture = 'stitchcode/turtleCNC_logo.png';
 	this.logo.color = new Color(230, 230, 230);
 	this.logo.drawNew();
 };
@@ -363,7 +363,7 @@ IDE_Morph.prototype.createControlBar = function () {
         startButton,
         projectButton,
         settingsButton,
-        steppingButton,
+        //steppingButton,
         stageSizeButton,
         zoomToFitButton,
         //largeStageSizeButton,
@@ -487,7 +487,7 @@ IDE_Morph.prototype.createControlBar = function () {
     this.controlBar.add(zoomToFitButton);
     this.controlBar.zoomToFitButton = zoomToFitButton; // for refreshing
 
-
+    /*
     //steppingButton
     button = new ToggleButtonMorph(
         null, //colors,
@@ -520,6 +520,7 @@ IDE_Morph.prototype.createControlBar = function () {
     steppingButton = button;
     this.controlBar.add(steppingButton);
     this.controlBar.steppingButton = steppingButton; // for refreshing
+    */
 
     // stopButton
     button = new ToggleButtonMorph(
@@ -610,7 +611,7 @@ IDE_Morph.prototype.createControlBar = function () {
     startButton = button;
     this.controlBar.add(startButton);
     this.controlBar.startButton = startButton;
-
+    
     // steppingSlider
     slider = new SliderMorph(
         61,
@@ -732,8 +733,8 @@ IDE_Morph.prototype.createControlBar = function () {
         slider.setCenter(myself.controlBar.center());
         slider.setRight(stageSizeButton.left() - padding);
 
-        steppingButton.setCenter(myself.controlBar.center());
-        steppingButton.setRight(slider.left() - padding);
+        //steppingButton.setCenter(myself.controlBar.center());
+        //steppingButton.setRight(slider.left() - padding);
 
         settingsButton.setCenter(myself.controlBar.center());
         settingsButton.setLeft(this.left());
@@ -865,7 +866,7 @@ IDE_Morph.prototype.turtlestitchMenu = function () {
         'check to hide grid',
     );
 
-
+    /*
     addPreference(
         'Hide jump stitches',
         function () {
@@ -894,6 +895,7 @@ IDE_Morph.prototype.turtlestitchMenu = function () {
         'uncheck to show stitch points',
         'check to hide stitch points'
     );
+    */
     addPreference(
         'Hide turtle',
         function () {
@@ -908,6 +910,7 @@ IDE_Morph.prototype.turtlestitchMenu = function () {
         'uncheck to show turtle',
         'check to hide turtle'
     );
+    /*
     addPreference(
         'Ignore embroidery warnings',
         function () {
@@ -924,9 +927,8 @@ IDE_Morph.prototype.turtlestitchMenu = function () {
         'check to ignore embroidery specific warnings'
     );
     menu.addLine();
-    menu.addItem('Default background color...', 'userSetBackgroundColor');
     menu.addItem('Default pen color...', 'userSetPenColor');
-
+    */
 
     menu.popup(world, pos);
 };
@@ -941,7 +943,7 @@ IDE_Morph.prototype.toggleAppMode = function (appMode) {
         this.controlBar.projectButton,
         this.controlBar.settingsButton,
         this.controlBar.stageSizeButton,
-        this.controlBar.steppingButton,
+        //this.controlBar.steppingButton,
         this.controlBar.turtlestitchButton,
         //this.controlBar.largeStageSizeButton,
         this.spriteEditor,
@@ -1200,6 +1202,7 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     element.newLines = 1;
     elements.push('-');
 
+    /*
     // too long
     elements.push('  ');
     element = new StringMorph();
@@ -1227,7 +1230,7 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     element = new StringMorph("");
     element.newLines = 2;
     elements.push(element);
-
+    */
 
     var zoomInButton = new PushButtonMorph(
             null,
@@ -1257,7 +1260,7 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     resetCameraButton.columns = 4;
     resetCameraButton.newColumn = 2;
 
-
+    /*
     var XRayButton = new ToggleMorph(
           'checkbox',
           null,
@@ -1288,7 +1291,7 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     myself.XRayButton = XRayButton;
     XRayButton.columns = 4;
     XRayButton.newColumn = 3;
-
+    */
 
 	var toggleTurboButton = new ToggleMorph(
             'checkbox',
@@ -1314,7 +1317,16 @@ IDE_Morph.prototype.createStatusDisplay = function () {
 
     elements.push('-');
 
+    var downloadGcodeButton = new PushButtonMorph(
+        null,
+        function () { myself.downloadGcode(); },
+        'Export G-Code'
+    );
+    downloadGcodeButton.columns = 6;
+    downloadGcodeButton.newColumn = 2;
+    elements.push(downloadGcodeButton);
 
+    /*
     var downloadSVGButton = new PushButtonMorph(
         null,
         function () { myself.downloadSVG(); },
@@ -1369,6 +1381,7 @@ IDE_Morph.prototype.createStatusDisplay = function () {
 		elements.push(element);
 		elements.push('  ');
 	}
+    */
 
     elements.forEach(function(each) { myself.statusDisplay.addElement(each); });
 };
@@ -1444,7 +1457,14 @@ IDE_Morph.prototype.fixLayout = function (situation) {
 };
 
 
+// G-code export
+IDE_Morph.prototype.downloadGcode = function() {
+    GcodeStr = this.stage.turtleShepherd.toGcode();
+    blob = new Blob([GcodeStr], {type: 'text/plain;charset=utf-8'});
+    saveAs(blob, (this.projectName ? this.projectName : 'turtlestitch') + '.gcode');
+};
 
+/*
 // SVG export
 IDE_Morph.prototype.downloadSVG = function() {
     svgStr = this.stage.turtleShepherd.toSVG();
@@ -1483,7 +1503,7 @@ IDE_Morph.prototype.downloadPNG = function() {
     blob = new Blob([view], {type: 'image/png'});
     saveAs(blob, name + '.png');
 };
-
+*/
 
 IDE_Morph.prototype.setProjectName = function (string) {
 	if (string.replace(/['"]/g, '') != this.projectName || SnapCloud.username != this.creator) {
@@ -1743,7 +1763,12 @@ IDE_Morph.prototype.createCategories = function () {
                 SpriteMorph.prototype.blockColor[category]
             ],
             button;
-
+        
+        var catName = category[0].toUpperCase().concat(category.slice(1))
+        if (contains(['cnc'], category)) {
+                catName = 'CNC';
+            }
+        
         button = new ToggleButtonMorph(
             colors,
             myself, // the IDE is the target
@@ -1754,7 +1779,8 @@ IDE_Morph.prototype.createCategories = function () {
                 });
                 myself.refreshPalette(true);
             },
-            category[0].toUpperCase().concat(category.slice(1)), // label
+            catName, // label
+            //category[0].toUpperCase().concat(category.slice(1)), // label
             function () {  // query
                 return myself.currentCategory === category;
             },
@@ -1809,7 +1835,7 @@ IDE_Morph.prototype.createCategories = function () {
     }
 
     SpriteMorph.prototype.categories.forEach(function (cat) {
-         if (!contains(['asdf','asdf','lists'], cat)) {
+         if (!contains(['asdf','asdf','lists','embroidery','colors'], cat)) {
             addCategoryButton(cat);
         }
     });
@@ -1891,34 +1917,10 @@ IDE_Morph.prototype.projectMenu = function () {
     //menu.addItem('Save to Disk', 'saveToDisk');
     menu.addLine();
 	menu.addItem(
-            'Export as SVG',
-            function() { myself.downloadSVG(); },
-            'Export current drawing as SVG Vector file'
+            'Export as G-code',
+            function() { myself.downloadGcode(); },
+            'Export current drawing as G-code file'
     );
-    menu.addItem(
-            'Export as PNG',
-            function() { myself.downloadPNG(); },
-            'Export current drawing as PNG image Vector file'
-    );
-    menu.addItem(
-            'Export as Melco/EXP',
-            function() { myself.downloadEXP(); },
-            'Export current drawing as EXP/Melco Embroidery file'
-    );
-
-    menu.addItem(
-            'Export as Tajima/DST',
-            function() { myself.downloadDST(); },
-            'Export current drawing as DST/Tajima Embroidery file'
-    );
-
-    if (DEBUG) {
-		menu.addItem(
-				'Export to Embroidery service',
-				function() { myself.uploadOrder(); },
-				'Export to stitchcode.com\'s embroidery service'
-		);
-	}
 
     menu.addLine();
     if (shiftClicked) {
@@ -2092,6 +2094,7 @@ IDE_Morph.prototype.projectMenu = function () {
             null,
             new Color(100, 0, 0)
         );
+        /*
         menu.addLine();
         menu.addItem(
             'open shared project from cloud...',
@@ -2140,6 +2143,7 @@ IDE_Morph.prototype.projectMenu = function () {
             null,
             new Color(100, 0, 0)
         );
+        */
     }
 
     menu.popup(world, pos);
@@ -2806,6 +2810,7 @@ ProjectDialogMorph.prototype.saveProject = function () {
 StageMorph.prototype.backgroundColor = new Color(255,255,255);
 StageMorph.prototype.defaultPenColor = new Color(0,0,0,1);
 
+/*
 IDE_Morph.prototype.userSetBackgroundColor = function () {
     new DialogBoxMorph(
         this,
@@ -2831,7 +2836,9 @@ IDE_Morph.prototype.userSetBackgroundColor = function () {
         false // numeric
     );
 };
+*/
 
+/*
 IDE_Morph.prototype.userSetPenColor = function () {
     new DialogBoxMorph(
         this,
@@ -2858,3 +2865,4 @@ IDE_Morph.prototype.userSetPenColor = function () {
         false // numeric
     );
 };
+*/

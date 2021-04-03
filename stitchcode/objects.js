@@ -14,6 +14,7 @@ SpriteMorph.prototype.categories =
         'lists',
         'colors',
         'other',
+        'cnc',
     ];
 
 SpriteMorph.prototype.blockColor = {
@@ -28,6 +29,7 @@ SpriteMorph.prototype.blockColor = {
     variables : new Color(243, 118, 29),
     lists : new Color(217, 77, 17),
     other: new Color(150, 150, 150),
+    cnc : new Color(207, 74, 217),
     colors : new Color(207, 74, 217),
 };
 
@@ -1381,6 +1383,7 @@ SpriteMorph.prototype.initBlocks = function () {
         defaults: [100,10]
     };
 
+    /*
     this.blocks.forwardByNr =
     {
 		only: SpriteMorph,
@@ -1404,7 +1407,7 @@ SpriteMorph.prototype.initBlocks = function () {
         category: 'motion',
         spec: 'go to x: %n y: %n in %n',
         defaults: [0, 0, 10]
-    };
+    }; */
     this.blocks.pointTowards =
     {
 		only: SpriteMorph,
@@ -1934,8 +1937,11 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('trimStitch'));
         blocks.push('-');
 
-  } else if (cat === 'other') {
+    } else if (cat === 'other') {
         blocks.push(block('zoomToFit'));
+
+    } else if (cat === 'cnc') {
+        //blocks.push(block('setSpindle'));
 
 	} else if (cat === 'colors') {
         blocks.push(block('setColor'));
