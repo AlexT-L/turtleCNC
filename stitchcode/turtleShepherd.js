@@ -57,9 +57,9 @@ TurtleShepherd.prototype.clear = function() {
     // New Gcode additions
     this.spindleSpeed = 10000;
     if (this.metric)
-        this.penDepth = -10;
+        this.cutDepth = -10;
     else
-        this.penDepth = -0.5;
+        this.cutDepth = -0.5;
      
 
 };
@@ -172,7 +172,7 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
                 "penDown":penState,
                 
                 // New gcode additions
-                "penDepth":this.penDepth,
+                "cutDepth":this.cutDepth,
             }
         );
         this.density[Math.round(x1) + "x" + Math.round(y1)] = 1;
@@ -224,7 +224,7 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
             "penDown":penState,
                 
             // New gcode additions
-            "penDepth":this.penDepth,
+            "cutDepth":this.cutDepth,
         }
     );
 
@@ -262,8 +262,8 @@ TurtleShepherd.prototype.pushCutDepthNow = function() {
 	}
     this.cache.push(
         {
-            "cmd":"pendepth",
-            "pendepth": n
+            "cmd":"cutdepth",
+            "cutdepth": n
         }
     );
 	this.cutDepth = this.newCutDepth;
@@ -387,16 +387,16 @@ TurtleShepherd.prototype.toGcode = function() {
     gcodeStr += "%H\n"; // Send to Home
     gcodeStr += "G0 X0 Y0 Z-10\n"; // Send to origin to prepare for cut
     /*
-    penDepthChanged = false;
-    penDepth = this.pendDepth;
+    cutDepthChanged = false;
+    cutDepth = this.pendDepth;
     hasFirst = false;
 
     for (var i=0; i < this.cache.length; i++) {
         if (this.cache[i].cmd == "color" && !this.ignoreColors) {
     		color = this.cache[i].color;
-        } else if (this.cache[i].cmd == "pendepth") {
-			penDepth = this.cache[i].pendepth;
-			if (hasFirst) penDepthChanged = true;
+        } else if (this.cache[i].cmd == "cutdepth") {
+			cutDepth = this.cache[i].cutdepth;
+			if (hasFirst) cutDepthChanged = true;
 \       } else if (this.cache[i].cmd == "move") {
             
         }
