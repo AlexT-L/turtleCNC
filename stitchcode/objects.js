@@ -44,7 +44,7 @@ SpriteMorph.prototype.init = function(globals) {
     this.cache = new Cache;
     this.color = StageMorph.prototype.defaultPenColor;
     this.stitchtype = 0;
-    this.isRunning = false;
+    //this.isRunning = false;
     this.stitchoptions = {};
 };
 
@@ -244,7 +244,7 @@ SpriteMorph.prototype.addStitchPoint = function(x2, y2) {
     this.reRender();
 
 };
-
+/*
 SpriteMorph.prototype.addDensityPoint = function(x1, y1) {
     var stage = this.parentThatIsA(StageMorph);
 
@@ -268,7 +268,7 @@ SpriteMorph.prototype.addDensityPoint = function(x1, y1) {
     circle.visible = !StageMorph.prototype.ignoreWarnings;
     stage.myDensityPoints.add(circle);
     this.reRender();
-};
+};*/
 
 // STITCH settings
 
@@ -305,7 +305,7 @@ SpriteMorph.prototype.beanStitch = function (length, autoadjust=true) {
 		this.stitchoptions = {};
 	}
 }
-
+/*
 SpriteMorph.prototype.crossStitch = function (length, width=10, center=true, autoadjust=true) {
 	if (length > 0 && width > 0) {
     this.stitchtype = "cross";
@@ -420,7 +420,7 @@ SpriteMorph.prototype.tieStitch = function () {
   myself.isDown = penState;
   myself.isRunning = runState;
 }
-
+*/
 SpriteMorph.prototype.origForward = SpriteMorph.prototype.forward;
 SpriteMorph.prototype.forward = function (steps) {
     var dest,
@@ -498,7 +498,7 @@ SpriteMorph.prototype.forwardSegemensWithEndCheck = function(steps, stepsize) {
 }
 
 
-
+/*
 SpriteMorph.prototype.beanStitchForward = function (steps) {
     this.doMoveForward(steps);
     this.doMoveForward(-steps);
@@ -679,20 +679,12 @@ SpriteMorph.prototype.tatamiForwardEnd = function (steps, width=10) {
   this.doMoveForward(c/2);
   this.turn(-90);
 }
-
+*/
 
 
 SpriteMorph.prototype.moveforward = function (steps) {
-  if ( this.stitchtype == "bean") {
-    this.beanStitchForward(steps);
-  } else if ( this.stitchtype == "cross") {
-    this.crossStitchForward(steps, this.stitchoptions.width)
-  } else if ( this.stitchtype == "zigzag") {
-    this.zigzagForward(steps, this.stitchoptions.width)
-  } else if ( this.stitchtype == "Z") {
-    this.ZForward(steps, this.stitchoptions.width)
-  } else if ( this.stitchtype == "tatami") {
-    this.tatamiForward(steps, this.stitchoptions.width)
+  if (this.isDown) {
+    this.doMoveForward(steps)
   } else {
     this.doMoveForward(steps)
   }
@@ -726,9 +718,7 @@ SpriteMorph.prototype.doMoveForward = function (steps) {
 		if (this.isDown) {
 			this.addStitch(oldx, oldy, this.xPosition(), this.yPosition(), this.heading);
 			this.addStitchPoint(this.xPosition(), this.yPosition());
-      if (warn && !stage.turtleShepherd.ignoreWarning) {
-				this.addDensityPoint(this.xPosition(), this.yPosition());
-			}
+      
 			if (isFirst || this.lastJumped ) {
 				this.addStitchPoint(oldx,oldy);
 			}
