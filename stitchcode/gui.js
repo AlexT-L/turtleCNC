@@ -1835,7 +1835,7 @@ IDE_Morph.prototype.createCategories = function () {
     }
 
     SpriteMorph.prototype.categories.forEach(function (cat) {
-         if (!contains(['asdf','asdf','lists','embroidery','colors'], cat)) {
+         if (!contains(['asdf','asdf','lists','embroidery','colors','pen'], cat)) {
             addCategoryButton(cat);
         }
     });
