@@ -149,6 +149,23 @@ TurtleShepherd.prototype.getMetricHeight = function() {
 	return((this.maxY - this.minY)/ this.pixels_per_millimeter * c).toFixed(2).toString();
 };
 
+// Overload method
+TurtleShepherd.prototype.moveTo= function(x, y, penState) {
+    if (this.newCutDepth) {
+        this.pushCutDepthNow();
+    }
+
+    this.cache.push(
+        {
+            "cmd":"move",
+            "x":x,
+            "y":y,
+            "pendown":penState,
+            "cutdepth":this.cutDepth
+        }
+    )
+}
+
 
 TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
     // ignore jump stitches withouth any previous stitches
@@ -169,10 +186,10 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
                 "cmd":"move",
                 "x":x1,
                 "y":y1,
-                "penDown":penState,
+                "pendown":penState,
                 
                 // New gcode additions
-                "cutDepth":this.cutDepth,
+                "cutdepth":this.cutDepth
             }
         );
         this.density[Math.round(x1) + "x" + Math.round(y1)] = 1;
@@ -224,7 +241,7 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
             "penDown":penState,
                 
             // New gcode additions
-            "cutDepth":this.cutDepth,
+            "cutdepth":this.cutDepth
         }
     );
 
@@ -248,6 +265,8 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
 	this.lastY = y2;
 };
 
+
+// CNC addition
 TurtleShepherd.prototype.setCutDepth = function(s) {
 	this.newCutDepth = s;
 };
@@ -256,17 +275,21 @@ TurtleShepherd.prototype.pushCutDepthNow = function() {
 	n = this.newCutDepth;
 	o = this.cutDepth;
 
+    this.cutDepth = newCutDepth;
+    
 	if (n == o) {
 		this.newCutDepth = false;
 		return;
 	}
-    this.cache.push(
-        {
-            "cmd":"cutdepth",
-            "cutdepth": n
-        }
-    );
-	this.cutDepth = this.newCutDepth;
+    if (this.penDown) {
+        this.cache.push(
+            {
+                "cmd":"cutdepth",
+                "cutdepth": n
+            }
+        );
+    }
+    
     this.newCutDepth = false;
 };
 
@@ -384,24 +407,35 @@ TurtleShepherd.prototype.undoStep = function() {
 TurtleShepherd.prototype.toGcode = function() {
 
     var gcodeStr = "$X\n"; // Unlock
-    gcodeStr += "%H\n"; // Send to Home
-    gcodeStr += "G0 X0 Y0 Z-10\n"; // Send to origin to prepare for cut
-    /*
-    cutDepthChanged = false;
-    cutDepth = this.pendDepth;
-    hasFirst = false;
+    gcodeStr += "$H\n"; // Send to Home
+
+    // Units selection and origin return
+    if (this.isMetric()) {
+        gcodeStr += "G21\n";
+        gcodeStr += "G0 X0 Y0 Z-10\n"; // Send to origin to prepare for cut
+    } else {
+        gcodeStr += "G20\n";
+        gcodeStr += "G0 X0 Y0 Z-0.5\n"; // Send to origin to prepare for cut
+    }
+
+    
 
     for (var i=0; i < this.cache.length; i++) {
-        if (this.cache[i].cmd == "color" && !this.ignoreColors) {
-    		color = this.cache[i].color;
+        if(this.cache[i].cmd == "move") {
+            if (this.cache[i].pendown) {
+                gcodeStr += "G1 X" + (this.cache[i].x) + " Y" + (this.cache[i].y) + " F" + (this.cache[i].feedrate) + "\n";
+            } else {
+                gcodeStr += "G0 X" + (this.cache[i].x) + " Y" + (this.cache[i].y) + "\n";
+            }
         } else if (this.cache[i].cmd == "cutdepth") {
-			cutDepth = this.cache[i].cutdepth;
-			if (hasFirst) cutDepthChanged = true;
-\       } else if (this.cache[i].cmd == "move") {
-            
+            if (this.cache[i].cutdepth) {
+                gcodeStr += "G1 Z" + (this.cache[i].cutdepth) + "\n";
+            }
+        } else if (this.cache[i].cmd == "pendown") {
+            //gcodeStr += "G1 Z" + (this.cache[i].cutdepth) + " F" + (this.cache[i].feedrate) + "\n";
         }
     }
-    */
+
     gcodeStr += "M30"
 
     return gcodeStr;
