@@ -1587,6 +1587,54 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'color: %hsb',
         category: 'colors'
     };
+    
+    // CNC blocks
+
+    this.blocks.setSpindleSpeed = 
+    {
+        only: SpriteMorph,
+        type: 'command',
+        spec: 'set spindle speed to %n rpm',
+        category: 'cnc',
+        defaults: [10000]
+    };
+
+    this.blocks.setCutDepth = 
+    {
+        only: SpriteMorph,
+        type: 'command',
+        spec: 'set cut depth to %n',
+        category: 'cnc',
+        defaults: [0.2]
+    };
+    
+    this.blocks.isPenDown =
+    {
+		only: SpriteMorph,
+        type: 'predicate',
+        category: 'cnc',
+        spec: 'cutting mode?',
+    };
+    /*
+    this.blocks.clear: {
+            type: 'command',
+            category: 'cnc',
+            spec: 'clear'
+    },
+    /*
+    this.blocks.down: {
+        only: SpriteMorph,
+        type: 'command',
+        category: 'cnc',
+        spec: 'cutting mode on'
+    },
+    this.blocks.up: {
+        only: SpriteMorph,
+        type: 'command',
+        category: 'cnc',
+        spec: 'cutting mode off'
+    },
+    */
 
     // Embroidery blocks
     /*
@@ -1945,7 +1993,14 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('zoomToFit'));
 
     } else if (cat === 'cnc') {
-        //blocks.push(block('setSpindle'));
+        blocks.push(block('clear'));
+        blocks.push('-');
+        blocks.push(block('setSpindleSpeed'));
+        blocks.push(block('setCutDepth'));
+        blocks.push(block('down'));
+        blocks.push(block('up'));
+        blocks.push('-');
+        blocks.push(block('isPenDown'));
 
 	} else if (cat === 'colors') {
         blocks.push(block('setColor'));
