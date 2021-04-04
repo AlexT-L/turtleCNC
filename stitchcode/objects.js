@@ -691,6 +691,24 @@ SpriteMorph.prototype.setSize = function (size) {
 };
 
 // CNC additions
+//*****************************************
+
+SpriteMorph.prototype.clearCNC = function (){
+	this.clear();
+}
+
+SpriteMorph.prototype.isCutting = function (){
+	return this.isPenDown;
+}
+
+SpriteMorph.prototype.startCut = function (){
+	this.down();
+}
+
+SpriteMorph.prototype.endCut = function (){
+	this.up();
+}
+
 SpriteMorph.prototype.setCutDepth = function (depth) {
     var stage = this.parentThatIsA(StageMorph);
     stage.turtleShepherd.setCutDepth(depth);
@@ -710,6 +728,7 @@ SpriteMorph.prototype.moveforward = function (steps) {
   }
 }
 
+//**********************************************************
 
 SpriteMorph.prototype.doMoveForward = function (steps) {
 	var dest,
@@ -1599,7 +1618,15 @@ SpriteMorph.prototype.initBlocks = function () {
     };
     
     // CNC blocks
-
+    
+    this.blocks.clearCNC = 
+    {
+    	only: SpriteMorph,
+        type: 'command',
+        category: 'cnc',
+        spec: 'clear',
+    };
+    
     this.blocks.setSpindleSpeed = 
     {
         only: SpriteMorph,
@@ -1615,16 +1642,33 @@ SpriteMorph.prototype.initBlocks = function () {
         type: 'command',
         spec: 'set cut depth to %n',
         category: 'cnc',
-        defaults: [0.2]
+        defaults: [0]
     };
     
-    this.blocks.isPenDown =
+    this.blocks.isCutting =
     {
 		only: SpriteMorph,
         type: 'predicate',
         category: 'cnc',
         spec: 'cutting mode?',
     };
+    
+    this.blocks.startCut = 
+    {
+    	only: SpriteMorph,
+        type: 'command',
+        category: 'cnc',
+        spec: 'start cut',
+    };
+    
+    this.blocks.endCut = 
+    {
+    	only: SpriteMorph,
+        type: 'command',
+        category: 'cnc',
+        spec: 'stop cut',
+    };
+
     /*
     this.blocks.clear: {
             type: 'command',
@@ -2003,14 +2047,17 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('zoomToFit'));
 
     } else if (cat === 'cnc') {
-        blocks.push(block('clear'));
+        //blocks.push(block('clear'));
+        blocks.push(block('clearCNC'));
         blocks.push('-');
         blocks.push(block('setSpindleSpeed'));
         blocks.push(block('setCutDepth'));
-        blocks.push(block('down'));
-        blocks.push(block('up'));
         blocks.push('-');
-        blocks.push(block('isPenDown'));
+        //blocks.push(block('up'));
+        //blocks.push(block('down'));
+        blocks.push(block('startCut'));
+        blocks.push(block('endCut'));
+        blocks.push(block('isCutting'));
 
 	} else if (cat === 'colors') {
         blocks.push(block('setColor'));
