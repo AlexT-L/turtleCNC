@@ -60,10 +60,11 @@ SpriteMorph.prototype.addStitch = function(x1, y1, x2, y2, angle=false ) {
     Math.round(this.color.b)  + ")" );
   opacity = this.color.a;
 
+  /*
   if (stage.isXRay) {
     color = new THREE.Color("rgb(255,255,255)");
     opacity = 0.25;
-  }
+  }*/
 
 	var material = this.cache.findMaterial(color,opacity);
 	if (!material) {
@@ -836,6 +837,7 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe, noShadow) {
 	}
 };
 
+/*
 SpriteMorph.prototype.gotoXYBy = function (x, y, stepsize) {
   // this block is deprecated but keep it for compatibility
   stitchState = this.stitchtype;
@@ -884,7 +886,7 @@ SpriteMorph.prototype.gotoXYIn = function (x, y, steps) {
 		this.forwardSegemensWithEndCheck(steps,stepsize);
   }
 };
-
+*/
 
 SpriteMorph.prototype.pointTowards = function (x, y) {
     var stage = this.parentThatIsA(StageMorph);
@@ -1587,7 +1589,7 @@ SpriteMorph.prototype.initBlocks = function () {
     };
 
     // Embroidery blocks
-
+    /*
     this.blocks.stopRunning =
     {
 		    only: SpriteMorph,
@@ -1698,6 +1700,7 @@ SpriteMorph.prototype.initBlocks = function () {
   		category: 'operators',
   		spec: 'PI',
   	};
+      */
 };
 
 SpriteMorph.prototype.initBlocks();

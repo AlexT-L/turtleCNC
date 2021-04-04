@@ -222,6 +222,9 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
             "x":x2,
             "y":y2,
             "penDown":penState,
+                
+            // New gcode additions
+            "penDepth":this.penDepth,
         }
     );
 
@@ -259,8 +262,8 @@ TurtleShepherd.prototype.pushCutDepthNow = function() {
 	}
     this.cache.push(
         {
-            "cmd":"cutdepth",
-            "cutdepth": n
+            "cmd":"pendepth",
+            "pendepth": n
         }
     );
 	this.cutDepth = this.newCutDepth;
@@ -399,6 +402,8 @@ TurtleShepherd.prototype.toGcode = function() {
         }
     }
     */
+    gcodeStr += "M30"
+
     return gcodeStr;
 };
 
