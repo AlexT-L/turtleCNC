@@ -703,10 +703,14 @@ SpriteMorph.prototype.isCutting = function (){
 
 SpriteMorph.prototype.startCut = function (){
 	this.down();
+    var stage = this.parentThatIsA(StageMorph);
+    stage.turtleShepherd.startCut();
 }
 
 SpriteMorph.prototype.endCut = function (){
 	this.up();
+    var stage = this.parentThatIsA(StageMorph);
+    stage.turtleShepherd.stopCut();
 }
 
 SpriteMorph.prototype.setCutDepth = function (depth) {

@@ -54,19 +54,37 @@ TurtleShepherd.prototype.clear = function() {
     this.newPenSize = 0;
 
     
-    // New Gcode additions
+    //*********************
+    // Defaults
+    this.restHeight = -10;
+
+    // Drilling parameters
+    this.speedup = 1000; // Speed up time (ms????)
+    
+    // Bed dimensions
+    this.bedMaxXcm = 1000;
+    this.bedMaxYcm = 1000;
+    this.bedMaxZcm = 100;
+    
+    // Material
+    this.feedRate = 10;
     this.newSpindleSpeed = false;
     this.spindleSpeed = 10000;
-    if (this.metric)
-        this.cutDepth = -10;
-    else
-        this.cutDepth = -0.5;
+    
+    // cut depth
+    this.defaultCutDepth = -10;
+    this.cutDepth = this.defaultCutDepth;
+    this.newCutDepth = false;
      
-
+    //*********************
+    
 };
 
 TurtleShepherd.prototype.toggleMetric = function() {
     return this.metric = !this.metric;
+
+    // Convert defaults to metric or imperial
+
 };
 
 TurtleShepherd.prototype.setMetric = function(b) {
@@ -131,7 +149,7 @@ TurtleShepherd.prototype.getDimensions = function() {
 		//c = 0.1
 		//unit = "cm";
 	} else {
-		c = 0.03937;
+		c = 1;
 		unit = "in";
 	}
     w= ((this.maxX - this.minX)/ this.pixels_per_millimeter * c).toFixed(2).toString();
@@ -182,6 +200,7 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
         this.minY = y1;
         this.maxX = x1;
         this.maxY = y1;
+        /*
         this.cache.push(
             {
                 "cmd":"move",
@@ -192,7 +211,7 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
                 // New gcode additions
                 "cutdepth":this.cutDepth
             }
-        );
+        );*/
         this.density[Math.round(x1) + "x" + Math.round(y1)] = 1;
         if (this.colors.length < 1) {
 			if (this.newColor) {
@@ -233,18 +252,18 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
 		if ( (dist / this.pixels_per_millimeter * 10) > this.maxLength)
 			this.tooLongCount += 1;
 	}
-
+    /*
     this.cache.push(
         {
             "cmd":"move",
             "x":x2,
             "y":y2,
-            "penDown":penState,
+            "pendown":penState,
                 
             // New gcode additions
             "cutdepth":this.cutDepth
         }
-    );
+    );*/
 
     this.w = this.maxX - this.minX;
     this.h = this.maxY - this.minY;
@@ -255,19 +274,58 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
         this.steps++;
     }
 
+	this.lastX = x2;
+	this.lastY = y2;
+
+    // CNC commands
+    if (this.newCutDepth) {
+        this.pushCutDepthNow();
+    }
+
+    this.cache.push(
+        {
+            "cmd":"move",
+            "x":x2,
+            "y":y2,
+            "pendown":penState,
+            "cutdepth":this.cutDepth,
+            "feedrate":this.feedRate
+        }
+    );
+
     if (warn) {
 		warn = false;
 		return [x2, y2];
 	} else {
 		return false;
 	}
-
-	this.lastX = x2;
-	this.lastY = y2;
 };
 
 
 // CNC addition
+//***********************************************************
+
+TurtleShepherd.prototype.startCut = function () {
+
+    this.cache.push(
+        {
+            "cmd":"startcut",
+            "cutdepth":this.cutDepth,
+            "spindlespeed":this.spindleSpeed,
+            "feedrate":this.feedRate
+        }
+    )
+    
+}
+
+TurtleShepherd.prototype.stopCut = function () {
+    this.cache.push(
+        {
+            "cmd":"stopcut"
+        }
+    )
+}
+
 TurtleShepherd.prototype.setCutDepth = function(s) {
 	this.newCutDepth = s;
 };
@@ -276,7 +334,7 @@ TurtleShepherd.prototype.pushCutDepthNow = function() {
 	n = this.newCutDepth;
 	o = this.cutDepth;
 
-    this.cutDepth = newCutDepth;
+    this.cutDepth = this.newCutDepth;
     
 	if (n == o) {
 		this.newCutDepth = false;
@@ -319,6 +377,10 @@ TurtleShepherd.prototype.pushSpindleSpeedNow = function() {
     
     this.newSpindleSpeed = false;
 };
+
+
+//***********************************************************
+
 
 TurtleShepherd.prototype.setDefaultColor= function(color) {
 	var c = {
@@ -432,21 +494,21 @@ TurtleShepherd.prototype.undoStep = function() {
 
 
 TurtleShepherd.prototype.toGcode = function() {
-
+    
     var gcodeStr = "$X\n"; // Unlock
     gcodeStr += "$H\n"; // Send to Home
 
-    // Units selection and origin return
+    // Set units of output
     if (this.isMetric()) {
-        gcodeStr += "G21\n";
-        gcodeStr += "G0 X0 Y0 Z-10\n"; // Send to origin to prepare for cut
+        gcodeStr += "G21\n"; // set units to mm
     } else {
-        gcodeStr += "G20\n";
-        gcodeStr += "G0 X0 Y0 Z-0.5\n"; // Send to origin to prepare for cut
+        gcodeStr += "G20\n"; // set units to mm
     }
 
+    // Units selection and origin return
+    gcodeStr += "G0 X0 Y0 Z" + (this.restHeight) + "\n"; // Send to origin to prepare for cut
     
-
+    // Read out and store commands from cache
     for (var i=0; i < this.cache.length; i++) {
         if(this.cache[i].cmd == "move") {
             if (this.cache[i].pendown) {
@@ -458,11 +520,16 @@ TurtleShepherd.prototype.toGcode = function() {
             if (this.cache[i].cutdepth) {
                 gcodeStr += "G1 Z" + (this.cache[i].cutdepth) + "\n";
             }
-        } else if (this.cache[i].cmd == "pendown") {
-            //gcodeStr += "G1 Z" + (this.cache[i].cutdepth) + " F" + (this.cache[i].feedrate) + "\n";
+        } else if (this.cache[i].cmd == "startcut") {
+            gcodeStr += "M3 S" + (this.cache[i].spindlespeed) + "\n";
+            gcodeStr += "G4 P" + (this.cache[i].speedup) + "\n";
+            gcodeStr += "G1 Z" + (this.cache[i].cutdepth) + " F" + (this.cache[i].feedrate) + "\n";
+        } else if (this.cache[i].cmd == "stopcut") {
+            gcodeStr += "G0 Z" + (this.restHeight) + "\n";
         }
     }
-
+    
+    gcodeStr += "$H\n"
     gcodeStr += "M30"
 
     return gcodeStr;
