@@ -1374,6 +1374,7 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'reset',
         category: 'control'
     };
+    /*
     this.blocks.forwardBy =
     {
 		only: SpriteMorph,
@@ -1382,7 +1383,7 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'move %n steps by %n steps',
         defaults: [100,10]
     };
-
+    
     /*
     this.blocks.forwardByNr =
     {
@@ -2864,7 +2865,7 @@ StageMorph.prototype.reportMouseY = function () {
     }
     return 0;
 };
-
+/*
 StageMorph.prototype.turnXRayOn = function () {
   this.isXRay = true;
   for (i = this.myStitchLines.children.length - 1; i >= 0; i--) {
@@ -2938,8 +2939,8 @@ StageMorph.prototype.turnXRayOff = function () {
     this.renderer.toggleTurtle();
 
   this.renderer.changed = true;
-
 }
+*/
 
 StageMorph.prototype.getIsXRay = function () {
   return this.isXRay;

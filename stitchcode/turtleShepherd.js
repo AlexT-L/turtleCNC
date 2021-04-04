@@ -402,7 +402,7 @@ TurtleShepherd.prototype.toGcode = function() {
     return gcodeStr;
 };
 
-
+/*
 TurtleShepherd.prototype.toSVG = function() {
 
     var svgStr = "<?xml version=\"1.0\" standalone=\"no\"?>\n";
@@ -933,6 +933,7 @@ TurtleShepherd.prototype.getStitchesAsArr = function () {
   }
   return stitches;
 }
+*/
 
 TurtleShepherd.prototype.debug_msg = function (st, clear) {
 	o = "";
