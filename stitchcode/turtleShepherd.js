@@ -55,6 +55,7 @@ TurtleShepherd.prototype.clear = function() {
 
     
     // New Gcode additions
+    this.newSpindleSpeed = false;
     this.spindleSpeed = 10000;
     if (this.metric)
         this.cutDepth = -10;
@@ -291,6 +292,32 @@ TurtleShepherd.prototype.pushCutDepthNow = function() {
     }
     
     this.newCutDepth = false;
+};
+
+TurtleShepherd.prototype.setSpindleSpeed = function(s) {
+	this.newSpindleSpeed = s;
+};
+
+TurtleShepherd.prototype.pushSpindleSpeedNow = function() {
+	n = this.newSpindleSpeed;
+	o = this.spindleSpeed;
+
+    this.spindleSpeed = newSpindleSpeed;
+    
+	if (n == o) {
+		this.newSpindleSpeed = false;
+		return;
+	}
+    if (this.penDown) {
+        this.cache.push(
+            {
+                "cmd":"spindlespeed",
+                "spindlespeed": n
+            }
+        );
+    }
+    
+    this.newSpindleSpeed = false;
 };
 
 TurtleShepherd.prototype.setDefaultColor= function(color) {

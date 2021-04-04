@@ -681,6 +681,26 @@ SpriteMorph.prototype.tatamiForwardEnd = function (steps, width=10) {
 }
 */
 
+SpriteMorph.prototype.setSize = function (size) {
+    var stage = this.parentThatIsA(StageMorph);
+    if (!isNaN(size)) {
+        this.size = Math.min(Math.max(+size, 0.0001), 1000);
+    }
+    stage.setPenSize(this.size);
+    stage.turtleShepherd.setPenSize(this.size);
+};
+
+// CNC additions
+SpriteMorph.prototype.setCutDepth = function (depth) {
+    var stage = this.parentThatIsA(StageMorph);
+    stage.turtleShepherd.setCutDepth(depth);
+}
+
+SpriteMorph.prototype.setSpindleSpeed = function (speed) {
+    var stage = this.parentThatIsA(StageMorph);
+    stage.turtleShepherd.setSpindleSpeed(speed);
+}
+
 
 SpriteMorph.prototype.moveforward = function (steps) {
   if (this.isDown) {
