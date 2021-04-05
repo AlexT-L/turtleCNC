@@ -1,6 +1,6 @@
 
 VERSION="1.0"
-SERVERURL = 'file:///C:/Users/atayl/'
+SERVERURL = document.URL
 
 // get debug mode
 url = new URL(window.location.href);
@@ -2192,7 +2192,6 @@ IDE_Morph.prototype.snapMenu = function () {
         world = this.world();
 
     menu = new MenuMorph(this);
-    menu.addItem('About TurtleSTITCH...', 'aboutTurtleStitch');
     menu.addItem('About TurtleCNC...', 'aboutTurtleCNC');
     menu.addItem('About Snap!...', 'aboutSnap');
 
