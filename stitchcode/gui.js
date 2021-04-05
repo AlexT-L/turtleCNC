@@ -1,5 +1,6 @@
 
-VERSION="2.6.2 dev"
+VERSION="1.0"
+SERVERURL = 'file:///C:/Users/atayl/'
 
 // get debug mode
 url = new URL(window.location.href);
@@ -1005,7 +1006,7 @@ IDE_Morph.prototype.aboutTurtleStitch = function () {
     pic = Morph.fromImageURL('stitchcode/assets/turtle-logo.png');
     pic.setExtent(new Point(32, 32));
 
-    aboutTxt = 'TurtleStich! ' + VERSION + '\n\n'
+    aboutTxt = 'TurtleStich! 2.6.2 dev\n\n'
         + 'Copyright \u24B8 2020 Michael Aschauer\n\n'
 
         + 'TurtleStitch is developed by OSEDA - Association for\n'
@@ -1025,12 +1026,49 @@ IDE_Morph.prototype.aboutTurtleStitch = function () {
     );
     btn2 = dlg.addButton(
 		function () {
-            window.open('http://www.turtlestitch.com', 'TurtleStitchWebsite');
+            window.open('https://www.turtlestitch.org/', 'TurtleStitchWebsite');
         },
         'TurtleStitch Website',
     );
     dlg.fixLayout();
 };
+
+// TurtleCNC addition
+//*************************************************************
+IDE_Morph.prototype.aboutTurtleCNC = function () {
+    var dlg, aboutTxt, pic, world = this.world();
+
+    pic = Morph.fromImageURL('stitchcode/assets/turtle-logo.png');
+    pic.setExtent(new Point(32, 32));
+
+    aboutTxt = 'TurtleCNC ' + VERSION + '\n\n'
+        + 'Copyright \u24B8 2021 Alex Taylor-Lash\n\n'
+
+        + 'TurtleCNC was developed as part of a Senior Design Thesis\n'
+        + 'at Princeton University under the guidance of\n\n'
+        + 'Professor Michael Littman\n'
+
+        + 'TurtleCNC is based on TurtleStich, which is based on Snap!\n\n'
+
+        dlg = new DialogBoxMorph();
+    dlg.inform(localize('About TurtleStitch'), localize(aboutTxt), world, pic);
+
+    btn1 = dlg.addButton(this.aboutTurtleStitch,
+        'About TurtleStitch!...'
+    );
+
+    btn2 = dlg.addButton(
+		function () {
+            window.open(SERVERURL, 'TurtleCNCWebsite');
+        },
+        'TurtleCNC Website',
+    );
+    dlg.fixLayout();
+};
+
+
+//*************************************************************
+
 
 // create status display (inspired by beetleblocks)
 IDE_Morph.prototype.createStatusDisplay = function () {
@@ -2154,7 +2192,8 @@ IDE_Morph.prototype.snapMenu = function () {
         world = this.world();
 
     menu = new MenuMorph(this);
-    menu.addItem('About TurtleStitch...', 'aboutTurtleStitch');
+    menu.addItem('About TurtleSTITCH...', 'aboutTurtleStitch');
+    menu.addItem('About TurtleCNC...', 'aboutTurtleCNC');
     menu.addItem('About Snap!...', 'aboutSnap');
 
     menu.addLine();
@@ -2165,9 +2204,9 @@ IDE_Morph.prototype.snapMenu = function () {
         }
     );
     menu.addItem(
-        'TurtleStitch Web Site',
+        'TurtleCNC Web Site <--- Need to link to main server page!!!',
         function () {
-            window.open('http://www.turtlestitch.com', 'TurtleStitchWebsite');
+            window.open(SERVERURL, 'TurtleCNCWebsite');
         }
     );
     menu.addItem(
@@ -2180,8 +2219,8 @@ IDE_Morph.prototype.snapMenu = function () {
         'Download source',
         function () {
             window.open(
-                'https://github.com/backface/turtlestitch',
-                'Turtlestitchsource'
+                'https://github.com/AlexT-L/turtleCNC',
+                'TurtleCNCsource'
             );
         }
     );
@@ -2866,3 +2905,8 @@ IDE_Morph.prototype.userSetPenColor = function () {
     );
 };
 */
+
+// CNC additions
+ProjectDialogMorph.prototype.getCNCExamplesProjectList = function () {
+    return this.ide.getMediaList('stitchcode/Examples');
+};
