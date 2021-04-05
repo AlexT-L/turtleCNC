@@ -1,6 +1,6 @@
 
 VERSION="1.0"
-SERVERURL = document.location.origin
+SERVERURL = document.location.protocol + '//' + document.location.host;
 
 // get debug mode
 url = new URL(window.location.href);
@@ -1059,7 +1059,7 @@ IDE_Morph.prototype.aboutTurtleCNC = function () {
 
     btn2 = dlg.addButton(
 		function () {
-            window.open(SERVERURL, 'TurtleCNCWebsite');
+            window.open(SERVERURL, '_blank');
         },
         'TurtleCNC Website',
     );
@@ -2205,7 +2205,7 @@ IDE_Morph.prototype.snapMenu = function () {
     menu.addItem(
         'TurtleCNC Web Site <--- Need to link to main server page!!!',
         function () {
-            window.open(SERVERURL, 'TurtleCNCWebsite');
+            window.open(SERVERURL, '_blank');
         }
     );
     menu.addItem(
