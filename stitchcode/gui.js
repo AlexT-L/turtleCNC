@@ -1,6 +1,6 @@
 
 VERSION="1.0"
-SERVERURL = window.location.origin
+SERVERURL = document.location.origin
 
 // get debug mode
 url = new URL(window.location.href);
