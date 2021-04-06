@@ -282,7 +282,7 @@ SymbolMorph.prototype.drawSymbolTurtle = function (canvas, color) {
 
     ctx.fillStyle = 'rgba(0,0,0,0)';
     ctx.fillRect(0, 0, w, w);
-    this.drawTexture('stitchcode/assets/turtles16.png');
+    this.drawTexture('cnccode/assets/turtles16.png');
 
     ctx.globalCompositeOperation = 'destination-out';
 
@@ -396,6 +396,31 @@ HueSlotMorph.prototype.getUserColor = function () {
     };
 };
 
+// CNC addition
+InputSlotMorph.prototype.materialsMenu = function () {
+    var dict = {},
+        rcvr = this.parentThatIsA(BlockMorph).scriptTarget(),
+        stage = rcvr.parentThatIsA(StageMorph);
+        
+    var materials = {
+        'aluminium':'Aluminium',
+        'acrylic':'Acrylic',
+        'solid':'Solid Surface',
+        'softplastic':'Soft Plastic',
+        'hardplastic':'Hard Plastic',
+        'phenolic':'Phenolic',
+        'laminate':'High Pressure Laminate',
+        'mdf':'MDF / Particle Board',
+        'softwood':'Softwood & Plywood',
+        'hardwood':'Hardwood'
+        };
+
+    materials.forEach(function (name) {
+        dict[materials[name]] = [name];}
+    );
+    return dict;
+};
+
 // labelPart() proxy
 SyntaxElementMorph.prototype.originalLabelPart = SyntaxElementMorph.prototype.labelPart;
 SyntaxElementMorph.prototype.labelPart = function (spec) {
@@ -417,6 +442,50 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = new HueSlotMorph();
             part.isStatic = true;
 			         break;
+
+        // New CNC Additions
+        case '%material':
+            part = new InputSlotMorph(
+                null,
+                false,
+                {
+                    'Aluminium' : ['aluminium'],
+                    'Acrylic' : ['acrylic'],
+                    'Solid Surface' : ['solid'],
+                    'Soft Plastic' : ['softplastic'],
+                    'Hard Plastic': ['hardplastic'],
+                    'Phenolic' : ['phenolic'],
+                    'High Pressure Laminate' : ['laminate'],
+                    'MDF / Particle Board' : ['mdf'],
+                    'Softwood & Plywood' : ['softwood'],
+                    'Hardwood' : ['hardwood']
+                },
+                //'materialsMenu',
+                true
+            );
+            break;
+        case '%machine':
+            part = new InputSlotMorph(
+                null,
+                false,
+                {
+                    'Genmitsu PROVer 3018 w/ GRBL Control' : ['prover3018'],
+                },
+                true
+            );
+            break;
+        case '%units':
+            part = new InputSlotMorph(
+                null,
+                false,
+                {
+                    [''] : false,
+                    'in' : 'in',
+                    'mm' : 'mm'
+                },
+                true
+            );
+            break;
         default:
             part = this.originalLabelPart(spec);
             break;

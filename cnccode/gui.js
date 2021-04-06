@@ -17,7 +17,7 @@ IDE_Morph.prototype.init = function(isAutoFill) {
     this.padding = 1;
 	/*
 	 this.droppedText(
-		this.getURL(this.resourceURL('stitchcode/embroidery-library.xml')),
+		this.getURL(this.resourceURL('cnccode/embroidery-library.xml')),
 		'Embroidery tools'
 	);
 	*/
@@ -33,7 +33,7 @@ IDE_Morph.prototype.createLogo = function () {
 	this.originalCreateLogo();
 	//if (MorphicPreferences.isFlat) {
 	// we are always flat!
-	this.logo.texture = 'stitchcode/turtleCNC_logo.png';
+	this.logo.texture = 'cnccode/turtleCNC_logo.png';
 	this.logo.color = new Color(230, 230, 230);
 	this.logo.drawNew();
 };
@@ -122,7 +122,7 @@ IDE_Morph.prototype.resourceURLOrig  = IDE_Morph.prototype.resourceURL;
 IDE_Morph.prototype.resourceURL = function () {
     var args = Array.prototype.slice.call(arguments, 0);
     if (args[0] == "Backgrounds" || args[0] == "Examples")
-        return 'stitchcode/' + args[0] + '/' + args[1];
+        return 'cnccode/' + args[0] + '/' + args[1];
     else {
         return args.join('/');
     }
@@ -684,7 +684,7 @@ IDE_Morph.prototype.createControlBar = function () {
         this,
         'turtlestitchMenu',
         new SymbolMorph('turtle', 14)
-        //new Morph.fromImageURL('stitchcode/assets/turtles.png')
+        //new Morph.fromImageURL('cnccode/assets/turtles.png')
         //'\u2699'
     );
     button.corner = 12;
@@ -1003,7 +1003,7 @@ IDE_Morph.prototype.zoomToFit = function (appMode) {
 IDE_Morph.prototype.aboutTurtleStitch = function () {
     var dlg, aboutTxt, pic, world = this.world();
 
-    pic = Morph.fromImageURL('stitchcode/assets/turtle-logo.png');
+    pic = Morph.fromImageURL('cnccode/assets/turtle-logo.png');
     pic.setExtent(new Point(32, 32));
 
     aboutTxt = 'TurtleStich! 2.6.2 dev\n\n'
@@ -1011,7 +1011,7 @@ IDE_Morph.prototype.aboutTurtleStitch = function () {
 
         + 'TurtleStitch is developed by OSEDA - Association for\n'
         + 'Development of Open Source Software in Education, Design\n'
-        + 'and Art and stitchcode.com - Visionary Embroidery.\n\n'
+        + 'and Art and cnccode.com - Visionary Embroidery.\n\n'
 
         + 'The project has been sponsored by netidee Open Innovation\n'
         + '(Internet Foundation Austria) and kickstarter crowdfunding.\n\n'
@@ -1038,7 +1038,7 @@ IDE_Morph.prototype.aboutTurtleStitch = function () {
 IDE_Morph.prototype.aboutTurtleCNC = function () {
     var dlg, aboutTxt, pic, world = this.world();
 
-    pic = Morph.fromImageURL('stitchcode/assets/turtle-logo.png');
+    pic = Morph.fromImageURL('cnccode/assets/turtle-logo.png');
     pic.setExtent(new Point(32, 32));
 
     aboutTxt = 'TurtleCNC ' + VERSION + '\n\n'
@@ -2203,7 +2203,7 @@ IDE_Morph.prototype.snapMenu = function () {
         }
     );
     menu.addItem(
-        'TurtleCNC Web Site <--- Need to link to main server page!!!',
+        'TurtleCNC Web Site',
         function () {
             window.open(SERVERURL, '_blank');
         }
@@ -2281,7 +2281,7 @@ IDE_Morph.prototype.setLanguage = function(lang, callback) {
 
     myself.originalSetLanguage(lang, function () {
         var translation = document.getElementById('bb-language'),
-            src = 'stitchcode/locales/lang-' + lang + '.js',
+            src = 'cnccode/locales/lang-' + lang + '.js',
             myInnerSelf = this;
         if (translation) {
             document.head.removeChild(translation);
@@ -2547,9 +2547,9 @@ IDE_Morph.prototype.uploadOrder = function () {
         world = this.world();
 
     if (window.location.hostname.endsWith("localhost")) {
-		 SHOP_URL = 'http://shop.stitchcode.localhost/ext.php';
+		 SHOP_URL = 'http://shop.cnccode.localhost/ext.php';
 	} else {
-		SHOP_URL = 'http://shop.stitchcode.com/ext.php';
+		SHOP_URL = 'http://shop.cnccode.com/ext.php';
 	}
 
 	if (myself.stage.turtleShepherd.hasSteps()) {
@@ -2907,5 +2907,5 @@ IDE_Morph.prototype.userSetPenColor = function () {
 
 // CNC additions
 ProjectDialogMorph.prototype.getCNCExamplesProjectList = function () {
-    return this.ide.getMediaList('stitchcode/Examples');
+    return this.ide.getMediaList('cnccode/Examples');
 };

@@ -26,6 +26,8 @@ TurtleShepherd.prototype.init = function() {
     this.ignoreWarning = false;
     this.backgroundColor = {r:0,g:0,b:0,a:1};
     this.defaultColor = {r:0,g:0,b:0,a:1};
+    this.materialsList = this.loadMaterials();
+    this.machinesList = this.loadMachines();
 };
 
 TurtleShepherd.prototype.clear = function() {
@@ -56,18 +58,24 @@ TurtleShepherd.prototype.clear = function() {
     
     //*********************
     // Defaults
-    this.restHeight = -10;
+    this.restHeight = 10;
+    
+    // Material
+    this.material = 'aluminium';
+
+    // Machine
+    this.machine = 'prover3018grbl';
 
     // Drilling parameters
     this.speedup = 1000; // Speed up time (ms????)
     
     // Bed dimensions
-    this.bedMaxXcm = 1000;
-    this.bedMaxYcm = 1000;
-    this.bedMaxZcm = 100;
+    this.bedLength = 250; // X coordinate range
+    this.bedWidth = 150; // Y coordinate range
+    this.bedHeight = 35; // Z coordinate range
     
     // Material
-    this.feedRate = 10;
+    this.feedRate = 200;
     this.newSpindleSpeed = false;
     this.spindleSpeed = 10000;
     
@@ -79,6 +87,41 @@ TurtleShepherd.prototype.clear = function() {
     //*********************
     
 };
+
+TurtleShepherd.prototype.loadMaterials = function() {
+    var materials = {
+        'aluminium':'Aluminium',
+        'acrylic':'Acrylic',
+        'solid':'Solid Surface',
+        'softplastic':'Soft Plastic',
+        'hardplastic':'Hard Plastic',
+        'phenolic':'Phenolic',
+        'laminate':'High Pressure Laminate',
+        'mdf':'MDF / Particle Board',
+        'softwood':'Softwood & Plywood',
+        'hardwood':'Hardwood'
+        };
+
+    return materials;
+}
+
+TurtleShepherd.prototype.setMaterial = function(material) {
+    this.material = material;
+}
+
+TurtleShepherd.prototype.loadMachines = function() {
+    machines = {};
+    return machines;
+}
+
+TurtleShepherd.prototype.setMachine = function(machine) {
+    this.machine = machine;
+}
+
+// Need to actually make a function of material/drillbit !!!!
+TurtleShepherd.prototype.getSafeDepth = function() {
+    return 0.2;
+}
 
 TurtleShepherd.prototype.toggleMetric = function() {
     return this.metric = !this.metric;
@@ -378,6 +421,13 @@ TurtleShepherd.prototype.pushSpindleSpeedNow = function() {
     this.newSpindleSpeed = false;
 };
 
+TurtleShepherd.prototype.setSpindleSpeed = function(s) {
+	this.newSpindleSpeed = s;
+};
+
+TurtleShepherd.prototype.setMaterial = function(material) {
+	this.material = material;
+};
 
 //***********************************************************
 
@@ -518,12 +568,12 @@ TurtleShepherd.prototype.toGcode = function() {
             }
         } else if (this.cache[i].cmd == "cutdepth") {
             if (this.cache[i].cutdepth) {
-                gcodeStr += "G1 Z" + (this.cache[i].cutdepth) + "\n";
+                gcodeStr += "G1 Z" + (-this.cache[i].cutdepth) + "\n";
             }
         } else if (this.cache[i].cmd == "startcut") {
             gcodeStr += "M3 S" + (this.cache[i].spindlespeed) + "\n";
             gcodeStr += "G4 P" + (this.cache[i].speedup) + "\n";
-            gcodeStr += "G1 Z" + (this.cache[i].cutdepth) + " F" + (this.cache[i].feedrate) + "\n";
+            gcodeStr += "G1 Z" + (-this.cache[i].cutdepth) + " F" + (this.cache[i].feedrate) + "\n";
         } else if (this.cache[i].cmd == "stopcut") {
             gcodeStr += "G0 Z" + (this.restHeight) + "\n";
         }

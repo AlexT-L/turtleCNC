@@ -8,11 +8,11 @@ SpriteMorph.prototype.categories =
         'control',
         'sensing',
         'operators',
-        'pen',
+        //'pen',
         'variables',
-        'embroidery',
+        //'embroidery',
         'lists',
-        'colors',
+        //'colors',
         'other',
         'cnc',
     ];
@@ -718,11 +718,25 @@ SpriteMorph.prototype.setCutDepth = function (depth) {
     stage.turtleShepherd.setCutDepth(depth);
 }
 
+SpriteMorph.prototype.getSafeDepth = function () {
+    var stage = this.parentThatIsA(StageMorph);
+    return stage.turtleShepherd.getSafeDepth();
+}
+
 SpriteMorph.prototype.setSpindleSpeed = function (speed) {
     var stage = this.parentThatIsA(StageMorph);
     stage.turtleShepherd.setSpindleSpeed(speed);
 }
 
+SpriteMorph.prototype.setMaterial = function (material) {
+    var stage = this.parentThatIsA(StageMorph);
+    stage.turtleShepherd.setMaterial(material);
+}
+
+SpriteMorph.prototype.setMachine = function (machine) {
+    var stage = this.parentThatIsA(StageMorph);
+    stage.turtleShepherd.setMachine(machine);
+}
 
 SpriteMorph.prototype.moveforward = function (steps) {
   if (this.isDown) {
@@ -1649,6 +1663,14 @@ SpriteMorph.prototype.initBlocks = function () {
         defaults: [0]
     };
     
+    this.blocks.getSafeDepth = 
+    {
+        only: SpriteMorph,
+        type: 'reporter',
+        spec: 'safe cut depth',
+        category: 'cnc'
+    };
+    
     this.blocks.isCutting =
     {
 		only: SpriteMorph,
@@ -1671,6 +1693,23 @@ SpriteMorph.prototype.initBlocks = function () {
         type: 'command',
         category: 'cnc',
         spec: 'stop cut',
+    };
+
+    this.blocks.setMaterial = 
+    {
+        only: SpriteMorph,
+        type: 'command',
+        category: 'cnc',
+        spec: 'set working material to %material',
+        defaults: ['Aluminum']
+    };
+    
+    this.blocks.setMachine = 
+    {
+        only: SpriteMorph,
+        type: 'command',
+        category: 'cnc',
+        spec: 'set machine to %machine'
     };
 
     /*
@@ -1791,7 +1830,7 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'trim',
         category: 'embroidery',
     };
-
+    */
 	// more blocks
 
     this.blocks.zoomToFit =
@@ -1800,13 +1839,13 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'zoom to fit',
         category: 'other'
     };
-
+    
   	this.blocks.reportPi = {
   		type: 'reporter',
   		category: 'operators',
   		spec: 'PI',
   	};
-      */
+    
 };
 
 SpriteMorph.prototype.initBlocks();
@@ -2051,14 +2090,15 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('zoomToFit'));
 
     } else if (cat === 'cnc') {
-        //blocks.push(block('clear'));
         blocks.push(block('clearCNC'));
+        blocks.push('-');
+        blocks.push(block('setMaterial'));
+        blocks.push(block('setMachine'));
         blocks.push('-');
         blocks.push(block('setSpindleSpeed'));
         blocks.push(block('setCutDepth'));
+        blocks.push(block('getSafeDepth'));
         blocks.push('-');
-        //blocks.push(block('up'));
-        //blocks.push(block('down'));
         blocks.push(block('startCut'));
         blocks.push(block('endCut'));
         blocks.push(block('isCutting'));
@@ -2476,7 +2516,7 @@ StageMorph.prototype.init = function (globals) {
 	function loadFont(callback) {
 		var xobj = new XMLHttpRequest();
 		xobj.overrideMimeType("application/json");
-		xobj.open('GET', 'stitchcode/fonts/simplex.json', true);
+		xobj.open('GET', 'cnccode/fonts/simplex.json', true);
 		xobj.onreadystatechange = function () {
 			  if (xobj.readyState == 4 && xobj.status == "200") {
 				callback(xobj.responseText);
@@ -2848,7 +2888,7 @@ StageMorph.prototype.initTurtle = function() {
 
 		var loader = new THREE.JSONLoader();
 
-		loader.load( 'stitchcode/assets/turtle.js',
+		loader.load( 'cnccode/assets/turtle.js',
 
 			function ( geometry, materials ) {
 				//var material = materials[ 0 ];

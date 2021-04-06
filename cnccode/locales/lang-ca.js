@@ -61,8 +61,8 @@ tempDict = {
     'Exportar diseny actual a arxiu de brodat Tajima/DST',
   'Export to Embroidery service':
     'Export a un servei de brodat',
-  'Export to stitchcode.com\'s embroidery service':
-    'Exportar al servei de brodat stitchcode.com',
+  'Export to cnccode.com\'s embroidery service':
+    'Exportar al servei de brodat cnccode.com',
   'Ignore colors during export':
     'Ignorar els colors a l\u0027exportar',
   'X-Ray':

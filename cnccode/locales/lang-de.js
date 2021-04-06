@@ -61,8 +61,8 @@ tempDict = {
     'Exportiert die aktuelle Zeichnung als Stickmuster im Tajima/DST Format',
   'Export to Embroidery service':
     'Exportieren zum Ausstickservice',
-  'Export to stitchcode.com\'s embroidery service':
-    'Exportiert die aktuelle Zeichnung zum stitchcode.com Ausstickservice',
+  'Export to cnccode.com\'s embroidery service':
+    'Exportiert die aktuelle Zeichnung zum cnccode.com Ausstickservice',
   'Ignore colors during export':
     'Ignoriere Farben beim Export',
   'X-Ray':

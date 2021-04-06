@@ -61,8 +61,8 @@ tempDict = {
     'Exporteer huidige afbeelding als borduurbestand in Tajima/DST format',
   'Export to Embroidery service':
     'Exporteren naar borduurservice',
-  'Export to stitchcode.com\'s embroidery service':
-    'Exporteer huidige afbeelding naar borduurservice stitchcode.com',
+  'Export to cnccode.com\'s embroidery service':
+    'Exporteer huidige afbeelding naar borduurservice cnccode.com',
   'Ignore colors during export':
     'Negeer kleuren bij export',
   'X-Ray':

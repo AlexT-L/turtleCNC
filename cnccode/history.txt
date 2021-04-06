@@ -3,7 +3,7 @@ Turtlestitch history
 
 180902
 ------
-* fix translation error when loading project: add (empty) translations files to stitchcode (issued #35)
+* fix translation error when loading project: add (empty) translations files to cnccode (issued #35)
 * fix chinese translation file (from snap!), wrong character
 * make stage handle more visible (issue #34)
 * write/read creator, originCreator, originName and remixhistory into projects (issue
