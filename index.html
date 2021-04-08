@@ -48,6 +48,7 @@
 				disableRetinaSupport();
 				world = new WorldMorph(document.getElementById('world'));
                 world.worldCanvas.focus();
+				world.isDevMode = true;
 				new IDE_Morph().openIn(world);
         		loop();
 			};

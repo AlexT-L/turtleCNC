@@ -8,26 +8,79 @@
 
 */
 
-// TODO: Color Change integration
+// Create default libraries (units are in mm by default, converted to in if needed)
+
+var materials = {},
+    machines = {},
+    mm2in = 1/25.4;
+
+materials.displayNames = {
+    'Aluminium' : ['aluminium'],
+    'Acrylic' : ['acrylic'],
+    'Solid Surface' : ['solid'],
+    'Soft Plastic' : ['softplastic'],
+    'Hard Plastic': ['hardplastic'],
+    'Phenolic' : ['phenolic'],
+    'High Pressure Laminate' : ['laminate'],
+    'MDF / Particle Board' : ['mdf'],
+    'Softwood & Plywood' : ['softwood'],
+    'Hardwood' : ['hardwood']
+};
+
+// Machines library
+machines = {
+    displayNames: {
+        'Genmitsu PROVer 3018 w/ GRBRL': ['prover3018grbl']
+    },
+    'prover3018grbl' : {
+        dimensions: {
+            L : 250,
+            W : 150,
+            H : 35
+        }
+    }
+};
+
+TurtleShepherd.prototype = {};
+TurtleShepherd.prototype.constructor = TurtleShepherd;
+TurtleShepherd.uber = Object.prototype;
+
+// Initialize default inputs for TurtleShepherd
+TurtleShepherd.prototype.setDefaults = function() {
+    this.materialDisplayNames = materials.displayNames;
+    this.machines = machines;
+    this.metric = true;
+    //this.materialDisplayNames['Test'] = ['test'];
+}
+TurtleShepherd.prototype.setDefaults();
+
+TurtleShepherd.prototype.addMachine = function(machine, length, width, height) {
+    machines.displayNames[machine] = [machine];
+    machines[machine] = {
+        dimensions: {
+            L : length,
+            W: width,
+            H: height
+        }
+    };
+}
+
+//TurtleShepherd.prototype.addMachine('TestMachine', 100, 50, 20);
 
 function TurtleShepherd() {
     this.init();
-
 }
 
 TurtleShepherd.prototype.init = function() {
     this.clear();
     this.pixels_per_millimeter = 5;
-    this.metric = true;
-	  this.maxLength = 121;
+	this.maxLength = 121;
     this.calcTooLong = true;
     this.densityMax = 15;
     this.ignoreColors = false;
     this.ignoreWarning = false;
     this.backgroundColor = {r:0,g:0,b:0,a:1};
     this.defaultColor = {r:0,g:0,b:0,a:1};
-    this.materialsList = this.loadMaterials();
-    this.machinesList = this.loadMachines();
 };
 
 TurtleShepherd.prototype.clear = function() {
@@ -75,7 +128,7 @@ TurtleShepherd.prototype.clear = function() {
     this.bedHeight = 35; // Z coordinate range
     
     // Material
-    this.feedRate = 200;
+    this.feedRate = 500;
     this.newSpindleSpeed = false;
     this.spindleSpeed = 10000;
     
@@ -90,16 +143,16 @@ TurtleShepherd.prototype.clear = function() {
 
 TurtleShepherd.prototype.loadMaterials = function() {
     var materials = {
-        'aluminium':'Aluminium',
-        'acrylic':'Acrylic',
-        'solid':'Solid Surface',
-        'softplastic':'Soft Plastic',
-        'hardplastic':'Hard Plastic',
-        'phenolic':'Phenolic',
-        'laminate':'High Pressure Laminate',
-        'mdf':'MDF / Particle Board',
-        'softwood':'Softwood & Plywood',
-        'hardwood':'Hardwood'
+        'aluminium':['Aluminium'],
+        'acrylic':['Acrylic'],
+        'solid':['Solid Surface'],
+        'softplastic':['Soft Plastic'],
+        'hardplastic':['Hard Plastic'],
+        'phenolic':['Phenolic'],
+        'laminate':['High Pressure Laminate'],
+        'mdf':['MDF / Particle Board'],
+        'softwood':['Softwood & Plywood'],
+        'hardwood':['Hardwood']
         };
 
     return materials;
@@ -107,6 +160,11 @@ TurtleShepherd.prototype.loadMaterials = function() {
 
 TurtleShepherd.prototype.setMaterial = function(material) {
     this.material = material;
+}
+
+TurtleShepherd.prototype.getMaterials = function() {
+    TurtleShepherd.prototype.loadMaterials();
+    return TurtleShepherd.prototype.materialsList;
 }
 
 TurtleShepherd.prototype.loadMachines = function() {
@@ -1127,4 +1185,58 @@ TurtleShepherd.prototype.debug_msg = function (st, clear) {
 	}
 	o = st + "<br />" + o;
 	document.getElementById("debug").innerHTML = o;
+};
+
+// Machining Environment 
+var Workspace;
+
+Workspace.prototype = {};
+Workspace.prototype.constructor = Workspace;
+Workspace.uber = Object.prototype;
+
+function Workspace () {
+    this.init();
+};
+
+Workspace.prototype.init = function () {
+    this.materials = [];
+    this.geometries = { stitch: [], stitchPoint: [], densityPoint: [], circle: [], plane: [], meshline: [] };
+};
+
+Workspace.prototype.clear = function () {
+    this.init();
+};
+
+Workspace.prototype.addMaterial = function (material) {
+    this.materials.push(material);
+};
+
+Workspace.prototype.findMaterial = function (color, opacity) {
+    return detect(
+		this.materials,
+		function (each) {
+			return each.color.r == color.r && each.color.g == color.g && each.color.b == color.b && each.opacity == opacity;
+		});
+};
+
+Workspace.prototype.addGeometry = function (type, geometry, params) {
+    this.geometries[type].push({ params: params, geometry: geometry });
+};
+
+Workspace.prototype.findGeometry = function (type, params) {
+
+    var geometry = detect(
+            this.geometries[type],
+            function (each) {
+                return (each.params.length === params.length)
+                    && each.params.every(function (element, index) {
+                        return element === params[index];
+                    })
+            });
+
+    if (geometry) {
+        return geometry.geometry;
+    } else {
+        return null;
+    }
 };

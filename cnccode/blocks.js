@@ -448,7 +448,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = new InputSlotMorph(
                 null,
                 false,
-                {
+                /*{
                     'Aluminium' : ['aluminium'],
                     'Acrylic' : ['acrylic'],
                     'Solid Surface' : ['solid'],
@@ -459,8 +459,8 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                     'MDF / Particle Board' : ['mdf'],
                     'Softwood & Plywood' : ['softwood'],
                     'Hardwood' : ['hardwood']
-                },
-                //'materialsMenu',
+                },*/
+                TurtleShepherd.prototype.materialDisplayNames,
                 true
             );
             break;
@@ -468,9 +468,8 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = new InputSlotMorph(
                 null,
                 false,
-                {
-                    'Genmitsu PROVer 3018 w/ GRBL Control' : ['prover3018'],
-                },
+                TurtleShepherd.prototype.machines.displayNames,
+                //{'Test':['Test']},
                 true
             );
             break;

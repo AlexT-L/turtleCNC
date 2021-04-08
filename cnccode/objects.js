@@ -1,5 +1,5 @@
 /* Sprite */
-// modified SpriteMorph turtlestitch functions
+// modified SpriteMorph turtleCNC functions
 
 
 SpriteMorph.prototype.categories =

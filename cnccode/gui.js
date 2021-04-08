@@ -204,7 +204,7 @@ IDE_Morph.prototype.applySavedTurtleStitchSettings = function () {
     this.stage.scene.grid.draw();
     this.stage.renderer.changed = true;
   } else {
-    this.stage.turtleShepherd.sMetric = true;
+    this.stage.turtleShepherd.metric = true;
   }
 
   if (backgroundColor) {
@@ -488,7 +488,7 @@ IDE_Morph.prototype.createControlBar = function () {
     this.controlBar.add(zoomToFitButton);
     this.controlBar.zoomToFitButton = zoomToFitButton; // for refreshing
 
-    /*
+    
     //steppingButton
     button = new ToggleButtonMorph(
         null, //colors,
@@ -521,7 +521,7 @@ IDE_Morph.prototype.createControlBar = function () {
     steppingButton = button;
     this.controlBar.add(steppingButton);
     this.controlBar.steppingButton = steppingButton; // for refreshing
-    */
+    
 
     // stopButton
     button = new ToggleButtonMorph(
@@ -734,8 +734,8 @@ IDE_Morph.prototype.createControlBar = function () {
         slider.setCenter(myself.controlBar.center());
         slider.setRight(stageSizeButton.left() - padding);
 
-        //steppingButton.setCenter(myself.controlBar.center());
-        //steppingButton.setRight(slider.left() - padding);
+        steppingButton.setCenter(myself.controlBar.center());
+        steppingButton.setRight(slider.left() - padding);
 
         settingsButton.setCenter(myself.controlBar.center());
         settingsButton.setLeft(this.left());
