@@ -1,9 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\cnccode",
-    "\\src"
+    "\\cnccode"
   ],
-  "SelectedNode": "\\src\\xml.js",
+  "SelectedNode": "\\cnccode\\threee",
   "PreviewInSolutionExplorer": false
 }

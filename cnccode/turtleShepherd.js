@@ -50,20 +50,10 @@ TurtleShepherd.prototype.setDefaults = function() {
     this.materialDisplayNames = materials.displayNames;
     this.machines = machines;
     this.metric = true;
+    this.in2mm = 1/25.4;
     //this.materialDisplayNames['Test'] = ['test'];
 }
 TurtleShepherd.prototype.setDefaults();
-
-TurtleShepherd.prototype.addMachine = function(machine, length, width, height) {
-    machines.displayNames[machine] = [machine];
-    machines[machine] = {
-        dimensions: {
-            L : length,
-            W: width,
-            H: height
-        }
-    };
-}
 
 //TurtleShepherd.prototype.addMachine('TestMachine', 100, 50, 20);
 
@@ -81,10 +71,26 @@ TurtleShepherd.prototype.init = function() {
     this.ignoreWarning = false;
     this.backgroundColor = {r:0,g:0,b:0,a:1};
     this.defaultColor = {r:0,g:0,b:0,a:1};
+
+    // Drilling parameters
+    this.speedup = 2; // Speed up time (s)
+
+    // Material
+    this.material;
+
+    // Machine
+    this.machine;
+    
+    // Bed dimensions
+    this.bedLength; // X coordinate range
+    this.bedWidth; // Y coordinate range
+    this.bedHeight; // Z coordinate range
+    
 };
 
 TurtleShepherd.prototype.clear = function() {
     this.cache = [];
+    this.l = 0;
     this.w = 0;
     this.h = 0;
     this.minX = 0;
@@ -107,25 +113,13 @@ TurtleShepherd.prototype.clear = function() {
     this.oldColor =  this.defaultColor;
 	this.penSize = 1;
     this.newPenSize = 0;
+    this.bedWarning = 0;
+    this.pieceWarning = 0;
 
     
     //*********************
     // Defaults
     this.restHeight = 10;
-    
-    // Material
-    this.material = 'aluminium';
-
-    // Machine
-    this.machine = 'prover3018grbl';
-
-    // Drilling parameters
-    this.speedup = 1000; // Speed up time (ms????)
-    
-    // Bed dimensions
-    this.bedLength = 250; // X coordinate range
-    this.bedWidth = 150; // Y coordinate range
-    this.bedHeight = 35; // Z coordinate range
     
     // Material
     this.feedRate = 500;
@@ -170,10 +164,6 @@ TurtleShepherd.prototype.getMaterials = function() {
 TurtleShepherd.prototype.loadMachines = function() {
     machines = {};
     return machines;
-}
-
-TurtleShepherd.prototype.setMachine = function(machine) {
-    this.machine = machine;
 }
 
 // Need to actually make a function of material/drillbit !!!!
@@ -336,18 +326,6 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
 	if (y2 < this.minY) this.minY = y2;
 	if (y2 > this.maxY) this.maxY = y2;
 
-	var d = Math.round(x2) + "x" + Math.round(y2);
-	if (this.density[d]) {
-		this.density[d] += 1;
-		if (this.density[d] > this.densityMax) {
-			this.densityWarning = true;
-			if (this.density[d] <= this.densityMax+1)
-				warn = true;
-		}
-	} else  {
-		this.density[d] = 1;
-	}
-
 	if ( this.calcTooLong && penState) {
     dist = Math.sqrt( (x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) );
 		if ( (dist / this.pixels_per_millimeter * 10) > this.maxLength)
@@ -366,7 +344,8 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState) {
         }
     );*/
 
-    this.w = this.maxX - this.minX;
+    this.l = this.maxX - this.minX;
+    this.w = this.maxY - this.minY;
     this.h = this.maxY - this.minY;
 
     if (!penState)
@@ -483,10 +462,105 @@ TurtleShepherd.prototype.setSpindleSpeed = function(s) {
 	this.newSpindleSpeed = s;
 };
 
-TurtleShepherd.prototype.setMaterial = function(material) {
-	this.material = material;
+TurtleShepherd.prototype.setupWorkpiece = function(material, x, y, z) {
+    // Check if machine is already added
+    if (workpiece !== undefined) {
+        throw new Error("Workpiece already configured");
+    }
+
+	this.workpiece.material = material;
+
+    var warning = false,
+        machine = this.machine;
+
+    if (machine !== undefined) {
+        if (x > this.bedLength) {
+            warning = "Workpiece dimensions exceed bed length";
+        } else if (y > this.bedWidth) {
+            warning = "Workpiece dimensions exceed bed width";
+        } else if (z > this.bedHeight) {
+            warning = "Workpiece dimensions exceed bed height";
+        }
+    };
+    
+    if (warning) {
+        throw new Error(warning);
+    };
+
+    this.workpiece.dimensions.L = x;
+    this.workpiece.dimensions.W = y;
+    this.workpiece.dimensions.H = z;
 };
 
+TurtleShepherd.prototype.setMachine = function(makeNew, machine, x, y, z) {
+    // Check if machine is already added
+    if (machine !== undefined) {
+        throw new Error("Machine already configured");
+    }
+
+    this.machine = machine;
+
+    if (makeNew) {
+        this.machines.displayNames[machine] = [machine];
+        this.machines[machine] = {
+            dimensions : {
+                L : x,
+                W : y,
+                H : z
+            }
+        }
+    };
+    
+    var machineDim = this.machines[machine].dimensions,
+        workDim = this.workpiece.dimensions;
+
+    // Enforce workpiece fits in machine bed
+    if (workDim.L > machineDim.L) {
+        throw new Error("Machine dimensions are smaller than workpiece");
+    } else {
+        this.bedLength = machineDim.L
+    }
+
+    if (workDim.W > machineDim.W) {
+        throw new Error("Machine dimensions are smaller than workpiece");
+    } else {
+        this.bedLength = machineDim.W
+    }
+
+    if (workDim.H > machineDim.H) {
+        throw new Error("Machine dimensions are smaller than workpiece");
+    } else {
+        this.bedLength = dim.H
+    }
+}
+
+
+// WARNINGS
+
+TurtleShepherd.prototype.getWorkpieceWarning = function() {
+    var warnString = "Warning: cut exceeds workpiece dimensions in ",
+        dim = this.workpiece.dimensions;
+    if (this.l > dim.L) {
+        return warnString.concat("x");
+    } else if (this.w > dim.W) {
+        return warnString.concat("y");
+    } else if (this.h > dim.H) {
+        return warnString.concat("z");
+    }
+    return "";
+};
+
+TurtleShepherd.prototype.getRangeWarning = function() {
+    var warnString = "Warning: cut exceeds workbed dimensions in ";
+    if (this.l > this.bedLength) {
+        return warnString.concat("x and has been truncated");
+    } else if (this.w > this.bedWidth) {
+        return warnString.concat("y and has been truncated");
+    } else if (this.h > this.bedHeight) {
+        return warnString.concat("z and has been truncated");
+    }
+    return "";
+};
 //***********************************************************
 
 
@@ -643,539 +717,6 @@ TurtleShepherd.prototype.toGcode = function() {
     return gcodeStr;
 };
 
-/*
-TurtleShepherd.prototype.toSVG = function() {
-
-    var svgStr = "<?xml version=\"1.0\" standalone=\"no\"?>\n";
-    svgStr += "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \n\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n";
-    svgStr += '<svg width="' + (this.w) + '" height="' + (this.h) + '"' +
-        ' viewBox="0 0 ' + (this.w) + ' ' + (this.h) + '" style="background-color:' + this.getBackgroundColorAsHex() + '"';
-    svgStr += ' xmlns="http://www.w3.org/2000/svg" version="1.1">\n';
-    svgStr += '<title>Embroidery export</title>\n';
-
-    hasFirst = false;
-    tagOpen = false;
-    colorChanged = false;
-    penSizeChanged = false;
-    penSize = 1;
-    lastStitch = null;
-    color = this.defaultColor;
-
-    for (var i=0; i < this.cache.length; i++) {
-        if (this.cache[i].cmd == "color" && !this.ignoreColors) {
-    			color = this.cache[i].color;
-    			if (hasFirst) colorChanged = true;
-    			if (tagOpen) svgStr += '" />\n';
-    			tagOpen = false;
-        } else if (this.cache[i].cmd == "pensize") {
-			penSize = this.cache[i].pensize;
-			if (hasFirst) penSizeChanged = true;
-			if (tagOpen) svgStr += '" />\n';
-			tagOpen = false;
-        } else if (this.cache[i].cmd == "move") {
-            stitch = this.cache[i];
-            if (!hasFirst) {
-                if (stitch.penDown) {
-                    svgStr += '<path fill="none" style="' +
-						'stroke:rgb('+ color.r + ',' + color.g + ',' + color.b +  '); ' +
-						'stroke-width:' + penSize + ';' +
-						'stroke-linecap:round;' +
-						'stroke-opacity:' + color.a + ';' +
-						'"' +
-                        ' d="M ' +
-						   (this.initX - this.minX) +
-                           ' ' +
-                           (this.maxY - this.initY) ;
-                    hasFirst = true;
-                    tagOpen = true;
-                } else {
-					// do nothing
-                }
-            } else {
-                if (stitch.penDown ) {
-                    if (!lastStich.penDown || colorChanged || penSizeChanged) {
-						svgStr += '<path fill="none" style="' +
-							'stroke:rgb('+ color.r + ',' + color.g + ',' + color.b +'); ' +
-							'stroke-width:' + penSize + ';' +
-							'stroke-linecap:round;' +
-							'stroke-opacity:' + color.a + ';' +
-							'"' +
-							' d="M ' +
-                            (lastStich.x - this.minX) +
-                            ' ' +
-                            (this.maxY - lastStich.y) +
-                            ' L ' +
-                            (stitch.x - this.minX) +
-                            ' ' +
-                            (this.maxY -  stitch.y);
-                    }
-                    svgStr += ' L ' +
-                        (stitch.x- this.minX) +
-                        ' ' +
-                        (this.maxY - stitch.y);
-                    tagOpen = true;
-                    colorChanged = false;
-                    penSizeChanged = false;
-                } else {
-                    if (tagOpen) svgStr += '" />\n';
-                    tagOpen = false;
-                }
-            }
-            lastStich = stitch;
-        }
-    }
-    if (tagOpen) svgStr += '" />\n';
-    svgStr += '</svg>\n';
-    return svgStr;
-};
-
-
-TurtleShepherd.prototype.toPNG = function() {
-		var color = this.defaultColor;
-		var hasFirst = false;
-		var colorChanged = false;
-		var cnv = document.createElement('canvas');
-		cnv.width = Math.round(this.w);
-		cnv.height = Math.round(this.h);
-        ctx = cnv.getContext('2d');
-		ctx.strokeStyle = "rgb(" + color.r + ","  + color.g + ","  + color.b + ")";
-		ctx.lineWidth = 1.0;
-		ctx.beginPath();
-
-		for (var i=0; i < this.cache.length; i++) {
-			if (this.cache[i].cmd == "color" && !this.ignoreColors) {
-				if (hasFirst) {
-					ctx.stroke();
-					ctx.beginPath();
-					colorChanged = true;
-				}
-				color = this.cache[i].color;
-				ctx.strokeStyle = "rgb(" + color.r + ","  + color.g + ","  + color.b + ")";
-			} else if (this.cache[i].cmd == "pensize") {
-				if (hasFirst) {
-					ctx.stroke();
-					ctx.beginPath();
-					colorChanged = true;
-				}
-				ctx.lineWidth = this.cache[i].pensize;
-			} else if (this.cache[i].cmd == "move") {
-				stitch = this.cache[i];
-				if (stitch.penDown) {
-					if (colorChanged) {
-						ctx.moveTo(lastStitch.x - this.minX, this.maxY -  lastStitch.y);
-						colorChanged = false;
-					}
-					ctx.lineTo( stitch.x - this.minX, this.maxY -  stitch.y);
-					hasFirst = true;
-				} else {
-					ctx.moveTo(stitch.x - this.minX, this.maxY -  stitch.y);
-					hasFirst = true;
-					lastJumped = true;
-				}
-				lastStitch = stitch;
-			}
-		}
-		ctx.stroke();
-
-		console.log(cnv);
-		return cnv.toDataURL();
-}
-
-
-TurtleShepherd.prototype.toEXP = function() {
-    var expArr = [];
-    pixels_per_millimeter = this.pixels_per_millimeter;
-    scale = 10 / pixels_per_millimeter;
-    lastStitch = null;
-    hasFirst = false;
-    weJustChangedColors = false;
-	origin = {}
-
-    function move(x, y) {
-        y *= -1;
-        if (x<0) x = x + 256;
-        expArr.push(Math.round(x));
-        if (y<0) y = y + 256;
-        expArr.push(Math.round(y));
-    }
-
-    for (var i=0; i < this.cache.length; i++) {
-
-        if (this.cache[i].cmd == "color" && !this.ignoreColors) {
-            expArr.push(0x80);
-            expArr.push(0x01);
-            expArr.push(0x00);
-            expArr.push(0x00);
-            weJustChangedColors = true;
-        } else if (this.cache[i].cmd == "move") {
-            stitch = this.cache[i];
-            if (!hasFirst) {
-                origin.x = Math.round(stitch.x * scale);
-                origin.y = Math.round(stitch.y * scale);
-                
-                // remove zero stitch - why is it here?
-                //if (!stitch.penDown) {
-                //  expArr.push(0x80);
-                //  expArr.push(0x04);
-                //}
-                //move(0,0);         
-                       
-                lastStitch = {cmd: "move", x: 0, y: -0, penDown: stitch.penDown}
-                hasFirst = true;
-            } else if (hasFirst) {
-                x1 = Math.round(stitch.x * scale)  - origin.x;
-                y1 = -Math.round(stitch.y * scale)  - origin.y;
-                x0 = Math.round(lastStitch.x * scale) - origin.x;
-                y0 = -Math.round(lastStitch.y * scale) - origin.y;
-
-                sum_x = 0;
-                sum_y = 0;
-                dmax = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-                dsteps = Math.abs(dmax / 127);
-
-                // remove zero stitch - why is it here?
-                //if (!lastStitch.penDown)
-                //	move(0,0);
-
-                if (weJustChangedColors) {                  
-                  // remove zero stitch - why is it here?
-                  //	if (!stitch.penDown) {
-                  //               expArr.push(0x80);
-                  //                expArr.push(0x04);
-                  //            }
-                  //	move(0,0);
-                  weJustChangedColors = false;
-                }
-
-                if (dsteps <= 1) {
-                    if (!stitch.penDown) {
-                        expArr.push(0x80);
-                        expArr.push(0x04);
-                    }
-                    move(Math.round(x1 - x0), Math.round(y1 - y0));
-                } else {
-                    for(j=0;j<dsteps;j++) {
-                        if (!stitch.penDown) {
-                            expArr.push(0x80);
-                            expArr.push(0x04);
-                        }
-                        if (j < dsteps -1) {
-                            move((x1 - x0)/dsteps, (y1 - y0)/dsteps);
-                            sum_x += (x1 - x0)/dsteps;
-                            sum_y += (y1 - y0)/dsteps;
-                        } else {
-                            move(Math.round((x1 - x0) - sum_x), Math.round((y1 - y0) - sum_y));
-                        }
-                    }
-                }
-            } 
-            lastStitch = stitch;
-            hasFirst = true;
-        }
-    }
-
-    expUintArr = new Uint8Array(expArr.length);
-    for (i=0;i<expArr.length;i++) {
-        expUintArr[i] = Math.round(expArr[i]);
-    }
-    return expUintArr;
-};
-
-
-TurtleShepherd.prototype.toDST = function(name="noname") {
-    var expArr = [];
-    lastStitch = null;
-    hasFirst = false;
-    pixels_per_millimeter = this.pixels_per_millimeter;
-    scale = 10 / pixels_per_millimeter;
-	count_stitches = 0;
-	count_jumps = 0;
-
-    function encodeTajimaStitch(dx, dy, jump) {
-        b1 = 0;
-        b2 = 0;
-        b3 = 0;
-
-        if (dx > 40) {
-                b3 |= 0x04;
-                dx -= 81;
-        }
-
-        if (dx < -40) {
-                b3 |= 0x08;
-                dx += 81;
-        }
-
-        if (dy > 40) {
-                b3 |= 0x20;
-                dy -= 81;
-        }
-
-        if (dy < -40) {
-                b3 |= 0x10;
-                dy += 81;
-        }
-
-        if (dx > 13) {
-                b2 |= 0x04;
-                dx -= 27;
-        }
-
-        if (dx < -13) {
-                b2 |= 0x08;
-                dx += 27;
-        }
-
-        if (dy > 13) {
-                b2 |= 0x20;
-                dy -= 27;
-        }
-
-        if (dy < -13) {
-                b2 |= 0x10;
-                dy += 27;
-        }
-
-        if (dx > 4) {
-                b1 |= 0x04;
-                dx -= 9;
-        }
-
-        if (dx < -4) {
-                b1 |= 0x08;
-                dx += 9;
-        }
-
-        if (dy > 4) {
-                b1 |= 0x20;
-                dy -= 9;
-        }
-
-        if (dy < -4) {
-                b1 |= 0x10;
-                dy += 9;
-        }
-
-        if (dx > 1) {
-                b2 |= 0x01;
-                dx -= 3;
-        }
-
-        if (dx < -1) {
-                b2 |= 0x02;
-                dx += 3;
-        }
-
-        if (dy > 1) {
-                b2 |= 0x80;
-                dy -= 3;
-        }
-
-        if (dy < -1) {
-                b2 |= 0x40;
-                dy += 3;
-        }
-
-        if (dx > 0) {
-                b1 |= 0x01;
-                dx -= 1;
-        }
-
-        if (dx < 0) {
-                b1 |= 0x02;
-                dx += 1;
-        }
-
-        if (dy > 0) {
-                b1 |= 0x80;
-                dy -= 1;
-        }
-
-        if (dy < 0) {
-                b1 |= 0x40;
-                dy += 1;
-        }
-
-        expArr.push(b1);
-        expArr.push(b2);
-        if (jump) {
-            expArr.push(b3 | 0x83);
-        } else {
-            expArr.push(b3 | 0x03);
-        }
-    }
-
-    function writeHeader(str, length, padWithSpace=true) {
-		for(var i = 0; i<length-1; i++) {
-			if (i < str.length) {
-				expArr.push("0xF1" + str[i].charCodeAt(0).toString(16));
-			} else {
-				if (padWithSpace) {
-					expArr.push(0x20);
-				} else {
-					expArr.push(0x00);
-				}
-			}
-		}
-		expArr.push(0x0d);
-	}
-
-	function pad(n, width, z) {
-		z = z || ' ';
-		n = n != 0 ? n + '' : "0";
-		return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-	}
-
-	var extx1 = Math.round(this.maxX) - this.initX;
-	var exty1 = Math.round(this.maxY) - this.initY;
-	var extx2 = Math.round(this.minX) - this.initX;
-	var exty2 = Math.round(this.maxY) - this.initY;
-	writeHeader("LA:" + name.substr(0, 16), 20, true);
-	writeHeader("ST:" + pad(this.steps, 7), 11);
-	writeHeader("CO:" + pad(this.colors.length, 3), 7);
-	writeHeader("+X:" + pad(Math.round(extx1 / this.pixels_per_millimeter) * 10, 5), 9); // Math.round(this.getMetricWidth()*10), 9);
-	writeHeader("-X:" + pad(Math.abs(Math.round(extx2 / this.pixels_per_millimeter)) * 10, 5), 9);
-	writeHeader("+Y:" + pad(Math.round(exty1 / this.pixels_per_millimeter) * 10, 5), 9); //Math.round(this.getMetricHeight()*10), 9);
-	writeHeader("-Y:" + pad(Math.abs(Math.round(exty2 / this.pixels_per_millimeter)) * 10, 5), 9);
-
-	var needle_end_x = this.lastX - this.initX;
-	var needle_end_y = this.lastY - this.initY;
-
-	writeHeader("AX:" + pad(Math.round(needle_end_x / this.pixels_per_millimeter) * 10, 6), 10);
-	writeHeader("AY:" + pad(Math.round(needle_end_y / this.pixels_per_millimeter) * 10, 6), 10);
-	writeHeader("MX:", 10);
-	writeHeader("MY:", 10);
-	writeHeader("PD:", 10);
-
-	// extented header would go here
-	// "AU:%s\r" % author)
-    // "CP:%s\r" % meta_copyright)
-    // "TC:%s,%s,%s\r" % (thread.hex_color(), thread.description, thread.catalog_number))
-
-	// end of header data
-	expArr.push(0x1a);
-
-    // Print remaining empty header
-    for (var i=0; i<387; i++) {
-        expArr.push(0x20);
-    }
-
-	origin = {}
-	hasFirst = false;
-	weJustChangedColors = false;
-
-    for (i=0; i < this.cache.length; i++) {
-
-        if (this.cache[i].cmd == "color"  && !this.ignoreColors) {
-			expArr.push(0x00);
-			expArr.push(0x00);
-			expArr.push(0xC3);
-			weJustChangedColors = true;
-        } else if (this.cache[i].cmd == "move") {
-            stitch = this.cache[i];
-
-            if (!hasFirst) { //  create a stitch at origin
-                origin.x = Math.round(stitch.x * scale);
-                origin.y = Math.round(stitch.y * scale);
-                
-                // zero stitch: Why is it here
-                encodeTajimaStitch(0, 0, !stitch.penDown);
-                lastStitch = {cmd: "move", x: 0, y:0, penDown: stitch.penDown}
-              hasFirst = true;
-            } else {
-                x1 = Math.round(stitch.x * scale) - origin.x;
-                y1 = Math.round(stitch.y * scale) - origin.y;
-                x0 = Math.round(lastStitch.x * scale) - origin.x;
-                y0 = Math.round(lastStitch.y * scale) - origin.y;
-
-                sum_x = 0;
-                sum_y = 0;
-                dmax = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-                dsteps = Math.abs(dmax / 121);
-
-                if (!lastStitch.penDown)
-                  // zero stitch: Why is it here
-                  encodeTajimaStitch(0,0, false);
-
-                if (weJustChangedColors) {
-                  // zero stitch: Why is it here
-                  encodeTajimaStitch(0, 0, !stitch.penDown);
-                  weJustChangedColors = false;
-                }
-
-                if (dsteps <= 1) {
-                    encodeTajimaStitch((x1 - x0), (y1 - y0), !stitch.penDown);
-                    count_stitches++;
-                } else {
-                    for(j=0;j<dsteps;j++) {
-                        if (j < dsteps -1) {
-                            encodeTajimaStitch(
-                                Math.round((x1 - x0)/dsteps),
-                                Math.round((y1 - y0)/dsteps),
-                                !stitch.penDown
-                            );
-                            count_stitches++;
-                            sum_x += (x1 - x0)/dsteps;
-                            sum_y += (y1 - y0)/dsteps;
-                        } else {
-                            encodeTajimaStitch(
-                                Math.round((x1 - x0) - sum_x),
-                                Math.round((y1 - y0) - sum_y),
-                                !stitch.penDown
-                            );
-                            count_stitches++;
-                        }
-                    }
-                }
-            }
-            lastStitch = stitch;
-            hasFirst = true;
-        }
-    }
-
-	// end pattern
-    expArr.push(0x00);
-    expArr.push(0x00);
-    expArr.push(0xF3);
-
-	// convert
-    expUintArr = new Uint8Array(expArr.length);
-    for (i=0;i<expArr.length;i++) {
-        expUintArr[i] = Math.round(expArr[i]);
-    }
-    return expUintArr;
-};
-
-
-TurtleShepherd.prototype.getStitchesAsArr = function () {
-  stitches = [];
-  lastX = 0; lastY = 0;
-  hasFirst = false;
-  color = this.defaultColor;
-  for(i=0;i<this.cache.length;i++) {
-    if (this.cache[i].cmd == "color") {
-      color = this.cache[i].color;
-    }
-    if (this.cache[i].cmd == "move") {
-        if (!hasFirst) {
-          lastY = this.cache[i].y;
-          lastX = this.cache[i].x;
-          hasFirst = true;
-        } else {
-          stitches.push( [
-            [lastX, lastY],
-            [this.cache[i].x, this.cache[i].y ],
-            color
-          ]);
-          lastY = this.cache[i].y;
-          lastX = this.cache[i].x;
-        }
-    }
-  }
-  return stitches;
-}
-*/
-
 TurtleShepherd.prototype.debug_msg = function (st, clear) {
 	o = "";
 	if (!clear) {
@@ -1185,58 +726,4 @@ TurtleShepherd.prototype.debug_msg = function (st, clear) {
 	}
 	o = st + "<br />" + o;
 	document.getElementById("debug").innerHTML = o;
-};
-
-// Machining Environment 
-var Workspace;
-
-Workspace.prototype = {};
-Workspace.prototype.constructor = Workspace;
-Workspace.uber = Object.prototype;
-
-function Workspace () {
-    this.init();
-};
-
-Workspace.prototype.init = function () {
-    this.materials = [];
-    this.geometries = { stitch: [], stitchPoint: [], densityPoint: [], circle: [], plane: [], meshline: [] };
-};
-
-Workspace.prototype.clear = function () {
-    this.init();
-};
-
-Workspace.prototype.addMaterial = function (material) {
-    this.materials.push(material);
-};
-
-Workspace.prototype.findMaterial = function (color, opacity) {
-    return detect(
-		this.materials,
-		function (each) {
-			return each.color.r == color.r && each.color.g == color.g && each.color.b == color.b && each.opacity == opacity;
-		});
-};
-
-Workspace.prototype.addGeometry = function (type, geometry, params) {
-    this.geometries[type].push({ params: params, geometry: geometry });
-};
-
-Workspace.prototype.findGeometry = function (type, params) {
-
-    var geometry = detect(
-            this.geometries[type],
-            function (each) {
-                return (each.params.length === params.length)
-                    && each.params.every(function (element, index) {
-                        return element === params[index];
-                    })
-            });
-
-    if (geometry) {
-        return geometry.geometry;
-    } else {
-        return null;
-    }
 };

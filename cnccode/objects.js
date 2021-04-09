@@ -728,14 +728,19 @@ SpriteMorph.prototype.setSpindleSpeed = function (speed) {
     stage.turtleShepherd.setSpindleSpeed(speed);
 }
 
-SpriteMorph.prototype.setMaterial = function (material) {
+SpriteMorph.prototype.setWorkpiece = function (material, x, y, z) {
     var stage = this.parentThatIsA(StageMorph);
-    stage.turtleShepherd.setMaterial(material);
+    stage.turtleShepherd.setupWorkpiece(material, x, y, z);
 }
 
-SpriteMorph.prototype.setMachine = function (machine) {
+SpriteMorph.prototype.chooseMachine = function (machine) {
     var stage = this.parentThatIsA(StageMorph);
-    stage.turtleShepherd.setMachine(machine);
+    stage.turtleShepherd.setMachine(false, machine);
+}
+
+SpriteMorph.prototype.addMachine = function (name, x, y, z) {
+    var stage = this.parentThatIsA(StageMorph);
+    stage.turtleShepherd.setMachine(true, name, x, y, z);
 }
 
 SpriteMorph.prototype.moveforward = function (steps) {
@@ -1695,21 +1700,30 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'stop cut',
     };
 
-    this.blocks.setMaterial = 
+    this.blocks.setWorkpiece = 
     {
         only: SpriteMorph,
         type: 'command',
         category: 'cnc',
-        spec: 'set working material to %material',
-        defaults: ['Aluminum']
+        spec: 'workpiece: %material L %n W %n H %n',
+        defaults: ['Aluminum', 0, 0, 0]
     };
     
-    this.blocks.setMachine = 
+    this.blocks.chooseMachine = 
     {
         only: SpriteMorph,
         type: 'command',
         category: 'cnc',
         spec: 'set machine to %machine'
+    };
+    
+    this.blocks.addMachine = 
+    {
+        only: SpriteMorph,
+        type: 'command',
+        category: 'cnc',
+        spec: 'add machine: %s L %n W %n H %n',
+        defaults: [localize('Name'), 0, 0, 0]
     };
 
     /*
@@ -2092,8 +2106,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     } else if (cat === 'cnc') {
         blocks.push(block('clearCNC'));
         blocks.push('-');
-        blocks.push(block('setMaterial'));
-        blocks.push(block('setMachine'));
+        blocks.push(block('setWorkpiece'));
+        blocks.push(block('chooseMachine'));
+        blocks.push(block('addMachine'));
         blocks.push('-');
         blocks.push(block('setSpindleSpeed'));
         blocks.push(block('setCutDepth'));

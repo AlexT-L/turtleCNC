@@ -911,9 +911,9 @@ IDE_Morph.prototype.turtlestitchMenu = function () {
         'uncheck to show turtle',
         'check to hide turtle'
     );
-    /*
+
     addPreference(
-        'Ignore embroidery warnings',
+        'Ignore CNC warnings',
         function () {
            this.stage.toggleIgnoreWarnings();
             if (StageMorph.prototype.ignoreWarnings ) {
@@ -924,13 +924,13 @@ IDE_Morph.prototype.turtlestitchMenu = function () {
         },
         StageMorph.prototype.ignoreWarnings ,
 
-        'uncheck to show embroidery specific warnings',
-        'check to ignore embroidery specific warnings'
+        'uncheck to show machine specific warnings',
+        'check to ignore machine specific warnings'
     );
+    /*
     menu.addLine();
     menu.addItem('Default pen color...', 'userSetPenColor');
     */
-
     menu.popup(world, pos);
 };
 
@@ -1241,28 +1241,28 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     elements.push('-');
 
     /*
-    // too long
+    // outside workpiece area
     elements.push('  ');
     element = new StringMorph();
     element.color = new Color(255, 0, 0);
     element.update = function () {
-        this.text = "" + (stage.turtleShepherd.getTooLongStr());
+        this.text = "" + (stage.turtleShepherd.getWorkpieceWarning());
     };
     element.columns = 2;
     element.newColumn = 1;
     elements.push(element);
 
-     // density warning
+     // exceeds bed dimensions
     elements.push('');
     element = new StringMorph();
     element.color = new Color(255, 0, 0);
     element.update = function () {
-        this.text = "" + (stage.turtleShepherd.getDensityWarningStr());
+        this.text = "" + (stage.turtleShepherd.getRangeWarning());
     };
     element.columns = 2;
     element.newColumn = 2;
     elements.push(element);
-
+    /*
      // density warning
     elements.push('');
     element = new StringMorph("");

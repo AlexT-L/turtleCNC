@@ -478,7 +478,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                 null,
                 false,
                 {
-                    [''] : false,
                     'in' : 'in',
                     'mm' : 'mm'
                 },
