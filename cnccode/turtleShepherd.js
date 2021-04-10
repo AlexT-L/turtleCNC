@@ -94,12 +94,16 @@ TurtleShepherd.prototype.clear = function() {
     this.h = 0;
     this.minX = 0;
     this.minY = 0;
+    this.minZ = 0;
     this.maxX = 0;
     this.maxY = 0;
+    this.maxZ = 0;
     this.initX = 0;
     this.initY = 0;
+    this.initZ = 0;
     this.lastX = 0;
     this.lastY = 0;
+    this.lastZ = 0;
     this.scale = 1;
     this.steps = 0;
     this.stitchCount = 0;
@@ -133,6 +137,9 @@ TurtleShepherd.prototype.clear = function() {
     this.cutDepth = this.defaultCutDepth;
     this.newCutDepth = false;
      
+
+    // Tabs
+    this.tabs = [];
     //*********************
     
 };
@@ -230,21 +237,41 @@ TurtleShepherd.prototype.getDensityWarningStr = function() {
 };
 */
 
-TurtleShepherd.prototype.getDimensions = function() {
+TurtleShepherd.prototype.getCutDimensions = function() {
 
 	if (this.metric) {
 		c = 1;
 		unit = "mm";
-		//c = 0.1
-		//unit = "cm";
 	} else {
 		c = 1;
 		unit = "in";
 	}
+    l= ((this.maxZ - this.minZ)/ this.pixels_per_millimeter * c).toFixed(2).toString();
     w= ((this.maxX - this.minX)/ this.pixels_per_millimeter * c).toFixed(2).toString();
     h= ((this.maxY - this.minY)/ this.pixels_per_millimeter * c).toFixed(2).toString();
-	return w + " x " + h + " " + unit;
+	return l + " x " + w + " x " + h + " " + unit;
 };
+
+TurtleShepherd.prototype.getBedDimensions = function() {
+
+    if (this.machine === undefined) {
+        return "0 x 0 x 0";
+    }
+
+	if (this.metric) {
+		c = 1;
+		unit = "mm";
+	} else {
+		c = 1;
+		unit = "in";
+	}
+
+    l= (this.bedLength * c).toFixed(2).toString();
+    w= (this.bedWidth * c).toFixed(2).toString();
+    h= (this.bedHeight * c).toFixed(2).toString();
+	return l + " x " + w + " x " + h + " " + unit;
+};
+
 
 TurtleShepherd.prototype.getMetricWidth = function() {
 	c = 1
@@ -517,28 +544,32 @@ TurtleShepherd.prototype.setMachine = function(makeNew, machine, x, y, z) {
             }
         }
     };
-    
-    var machineDim = this.machines[machine].dimensions,
-        workDim = this.workpiece.dimensions;
 
-    // Enforce workpiece fits in machine bed
-    if (workDim.L > machineDim.L) {
-        throw new Error("Machine dimensions are smaller than workpiece");
-    } else {
-        this.bedLength = machineDim.L
+    var machineDim = this.machines[machine].dimensions;
+
+    if (this.workpiece) {
+        var workDim = this.workpiece.dimensions;
+
+        // Enforce workpiece fits in machine bed
+        if (workDim.L > machineDim.L) {
+            throw new Error("Machine dimensions are smaller than workpiece");
+        }
+        if (workDim.W > machineDim.W) {
+            throw new Error("Machine dimensions are smaller than workpiece");
+        } 
+        if (workDim.H > machineDim.H) {
+            throw new Error("Machine dimensions are smaller than workpiece");
+        }
     }
 
-    if (workDim.W > machineDim.W) {
-        throw new Error("Machine dimensions are smaller than workpiece");
-    } else {
-        this.bedWidth = machineDim.W
-    }
+    this.bedLength = machineDim.L;
+    this.bedWidth = machineDim.W;
+    this.bedHeight = machineDim.H;
 
-    if (workDim.H > machineDim.H) {
-        throw new Error("Machine dimensions are smaller than workpiece");
-    } else {
-        this.bedHeight = machineDim.H
-    }
+
+    if(makeNew && (!x || !y || !z)) {
+        throw new Error("Dimensions must be non-zero!")
+    };
 }
 
 
@@ -681,6 +712,118 @@ TurtleShepherd.prototype.undoStep = function() {
 	}
 };
 
+// G-code Extraction
+
+// Need to write function !!!
+TurtleShepherd.prototype.getFeedRate = function() {
+    return 1000;
+};
+
+TurtleShepherd.prototype.getSpindleSpeed = function() {
+    return 1000;
+};
+
+// Need to adjust to mm / in !!!
+TurtleShepherd.prototype.getTabHeight = function() {
+    return 5;
+}
+
+TurtleShepherd.prototype.getFreeLine = function(x1, y1, x2, y2, depthchange) {
+    // Tolerance
+    let tol = 0.0001;
+
+    let depthChange = depthchange;
+    if (depthChange === undefined) {depthChange = 0};
+
+    if (this.tabs.length == 0) { // No tabs, we're fine
+        return lineCut(x2, y2, depthChange);
+    };
+    
+    let int = [], // array of intersections
+        x00 = x1, x01 = x2-x1, y00 = y1, y01 = y2-y1; // Cut to be made, parametrized
+        
+    for (let i = 0; i < this.tabs.length; i++) {
+        let tab = tabs[1];
+        let x10 = tab[0][0], x11 = tab[0][1], y10 = tab[1][0], y11 = tab[1][1];
+
+        let det = x11 * y01 - x01 * y11;
+        if (det = 0) { continue; };
+
+        let s = (1/det) * ((x00 - x10)*y01 - (y00 - y10)*x01),
+            t = (1/det) * ((x00 - x10)*y11 - (y00 - y10)*x11);
+
+        if ((s >= 0) && (s <= 1)) {
+            if ((t >= 0) && (t <= 1)) {
+                int.push([t]);
+            }
+        };
+    };
+    
+    // No intersections means are either entirely inside or outside tab
+    // if we are in tab, don't make cut (still allows vertical drill into tab)
+    if (int.length == 0) {
+        if (this.inTab) {return "";}
+    };
+
+    // One intersection means we start or end in tab
+    if (int.length == 1) {
+        let s = int[0],
+            xInt = x1 + x01*s, 
+            yInt = y1 + y01*s;
+
+        if (this.inTab) {
+            this.inTab = false;
+            output = "" + lineCut(xInt, yInt) + ("G1 Z" + (this.workpiece.dimensions.H - depthChange*(1-s)) + "\n");
+            return  output + lineCut(x2, y2, depthChange*(1-s));
+        }
+        
+        this.inTab = true;
+        return "" + lineCut(xInt, yInt) + ("G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + "\n") + lineCut(x2, y2);
+    };
+    
+    // More than two intersections means we start and end outside of tab
+    if (int.length ) {
+        // Only really 1-2 intersections (we can get more than 2 if we cross a corner)
+        let minS = Math.min.apply(Math, int), 
+            maxS = Math.max.apply(Math, int),
+            output = "";
+        
+        // first cut segment
+        let xInt = x1 + x01*minS, 
+            yInt = y1 + y01*minS;
+        output += lineCut(xInt, yInt, depthChange*minS);
+        output += ("G1 Z" + (this.workpiece.dimensions.H-this.getTabHeight()) + "\n");
+
+        // traverse tab
+        xInt = xInt = x1 + x01*maxS;
+        yInt = y1 + y01*maxS;
+        output += lineCut(xInt, yInt);
+
+        // second cut segment
+        output += ("G1 Z" + (this.workpiece.dimensions.H - depthChange*(1-maxS)) + "\n");
+        output += lineCut(x2, y2, depthChange*(1-maxS));
+        
+        // return cuts
+        return output;
+    };
+    
+};
+
+TurtleShepherd.prototype.lineCut = function(x2, y2, depthChange) {
+    let feed = this.getFeedRate();
+
+    if (depthChange === undefined) {
+        return "G1 X" + x2 + " Y" + y2 + " F" + feed + "\n";
+    };
+    
+    let depth = Math.min(this.workpiece.dimensions.H, depthChange);
+    
+    return "G1 X" + x2 + " Y" + y2 + " Z" + depth + " F" + feed + "\n";
+};
+
+TurtleShepherd.prototype.getFreeArc = function() {
+
+};
 
 TurtleShepherd.prototype.toGcode = function() {
     

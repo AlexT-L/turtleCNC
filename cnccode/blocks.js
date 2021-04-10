@@ -448,18 +448,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = new InputSlotMorph(
                 null,
                 false,
-                /*{
-                    'Aluminium' : ['aluminium'],
-                    'Acrylic' : ['acrylic'],
-                    'Solid Surface' : ['solid'],
-                    'Soft Plastic' : ['softplastic'],
-                    'Hard Plastic': ['hardplastic'],
-                    'Phenolic' : ['phenolic'],
-                    'High Pressure Laminate' : ['laminate'],
-                    'MDF / Particle Board' : ['mdf'],
-                    'Softwood & Plywood' : ['softwood'],
-                    'Hardwood' : ['hardwood']
-                },*/
                 TurtleShepherd.prototype.materialDisplayNames,
                 true
             );
@@ -469,7 +457,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                 null,
                 false,
                 TurtleShepherd.prototype.machines.displayNames,
-                //{'Test':['Test']},
                 true
             );
             break;

@@ -1211,29 +1211,29 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     space.newLines = 0.5;
     elements.push(space);
 
-    elements.push(' Stitches : ');
+    elements.push(' Workbed: ');
     element = new StringMorph();
     element.update = function () {
-        this.text = (stage.turtleShepherd.getStepCount()).toString()+ "        ";
+        this.text = (stage.turtleShepherd.getBedDimensions()).toString()+ "        ";
     };
     element.columns = 3;
     element.newColumn = 1;
     elements.push(element);
 
-
-    elements.push('Jumps : ');
+    /*
+    elements.push('Workpiece: ');
     element = new StringMorph();
     element.update = function () {
         this.text = (stage.turtleShepherd.getJumpCount()).toString()+ "        ";
-    };
+    };*/
     element.columns = 3;
-    element.newColumn = 2;
+    element.newColumn = 1;
     elements.push(element);
-
-    elements.push('Size : ');
+    
+    elements.push('                     Cut Size : ');
     element = new StringMorph();
     element.update = function () {
-        this.text = (stage.turtleShepherd.getDimensions());
+        this.text = (stage.turtleShepherd.getCutDimensions());
     };
 	  element.newLines = 1;
     elements.push(element);

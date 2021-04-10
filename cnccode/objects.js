@@ -8,11 +8,8 @@ SpriteMorph.prototype.categories =
         'control',
         'sensing',
         'operators',
-        //'pen',
         'variables',
-        //'embroidery',
         'lists',
-        //'colors',
         'other',
         'cnc',
     ];
@@ -21,8 +18,6 @@ SpriteMorph.prototype.blockColor = {
     motion : new Color(74, 108, 212),
     pen : new Color(0, 161, 120),
     looks : new Color(143, 86, 227),
-    sound : new Color(207, 74, 217),
-    embroidery : new Color(0,120,0),
     control : new Color(230, 168, 34),
     sensing : new Color(4, 148, 220),
     operators : new Color(98, 194, 19),
@@ -30,7 +25,6 @@ SpriteMorph.prototype.blockColor = {
     lists : new Color(217, 77, 17),
     other: new Color(150, 150, 150),
     cnc : new Color(207, 74, 217),
-    colors : new Color(207, 74, 217),
 };
 
 
@@ -51,8 +45,8 @@ SpriteMorph.prototype.init = function(globals) {
 SpriteMorph.prototype.addStitch = function(x1, y1, x2, y2, angle=false ) {
   var stage = this.parentThatIsA(StageMorph);
 
-  if (this.stitchLines === null) {
-    this.stitchLines = new THREE.Group();
+  if (this.cutLines === null) {
+    this.cutLines = new THREE.Group();
   }
 	color = new THREE.Color("rgb("+
     Math.round(this.color.r) + "," +
@@ -103,7 +97,7 @@ SpriteMorph.prototype.addStitch = function(x1, y1, x2, y2, angle=false ) {
 		});
 		material.transparent = true;
 		var mesh = new THREE.Mesh( g.geometry, material );
-		stage.myStitchLines.add(mesh);
+		stage.myCutLines.add(mesh);
 	} */
 
 	// render as plain lines - OLD version
@@ -120,7 +114,7 @@ SpriteMorph.prototype.addStitch = function(x1, y1, x2, y2, angle=false ) {
 			this.cache.addGeometry('stitch', geometry, [x1,y1,x2,y2]);
 		}
 		line = new THREE.Line(geometry, material);
-		stage.myStitchLines.add(line);
+		stage.myCutLines.add(line);
 	} */
 
 	// render as quads
@@ -145,7 +139,7 @@ SpriteMorph.prototype.addStitch = function(x1, y1, x2, y2, angle=false ) {
 		line.translateY(y1 + (y2 - y1)/2);
     //if (!angle) angle = this.heading;
 		line.rotation.z = (90 - angle) * Math.PI / 180;
-		stage.myStitchLines.add(line);
+		stage.myCutLines.add(line);
 	}
 	this.reRender();
 };
@@ -693,9 +687,19 @@ SpriteMorph.prototype.setSize = function (size) {
 // CNC additions
 //*****************************************
 
+SpriteMorph.prototype.addTabHere = function (w, h) {
+    var x, y;
+    x = this.xPosition();
+    y = this.yPosition();
+    this.addTab(x, y, w, h, this.heading);
+}
+
 SpriteMorph.prototype.setTool = function (diameter, flutes){
+    if (!isNaN(diameter)) {
+        this.size = Math.min(Math.max(+diameter, 0.0001), 1000);
+    }
 	var stage = this.parentThatIsA(StageMorph);
-    this.penSize = diameter;
+    stage.setPenSize(this.size);
     stage.turtleShepherd.setTool(diameter, flutes);
 }
 
@@ -746,6 +750,9 @@ SpriteMorph.prototype.setWorkpiece = function (material, x, y, z) {
 
 SpriteMorph.prototype.chooseMachine = function (machine) {
     var stage = this.parentThatIsA(StageMorph);
+    if (machine == "") {
+        throw new Error("Please select a machine");
+    }
     stage.turtleShepherd.setMachine(false, machine);
 }
 
@@ -761,6 +768,70 @@ SpriteMorph.prototype.moveforward = function (steps) {
     this.doMoveForward(steps)
   }
 }
+
+SpriteMorph.prototype.addTab = function(x, y, w, h, angle=false ) {
+  var stage = this.parentThatIsA(StageMorph);
+
+  if (this.tabLines === null) {
+    this.tabLines = new THREE.Group();
+  }
+	color = new THREE.Color("rgb(0,0,255)");
+    opacity = 1;
+
+	var material = this.cache.findMaterial(color,opacity);
+	if (!material) {
+		material = new THREE.MeshBasicMaterial({
+			color: color,
+			side:THREE.DoubleSide,
+			opacity: opacity
+		});
+		material.transparent = true;
+		this.cache.addMaterial(material);
+	}
+
+
+	// render as quads
+	if (true) {
+		var geometry = this.cache.findGeometry('plane', [w, h]);
+		if (!geometry) {
+			geometry = new THREE.PlaneGeometry( w, h, 1, 1);
+			this.cache.addGeometry('plane', geometry, [w, h]);
+		}
+
+		line = new THREE.Mesh(geometry, material);
+		line.translateX(x);
+		line.translateY(y);
+    //if (!angle) angle = this.heading;
+		line.rotation.z = (90 - angle) * Math.PI / 180;
+		stage.myTabs.add(line);
+	}
+	this.reRender();
+};
+
+SpriteMorph.prototype.addArcCut = function(x1, y1, theta1, theta2) {
+    var stage = this.parentThatIsA(StageMorph);
+
+	var geometry = this.cache.findGeometry('circle', [3, 6,]);
+	if (!geometry) {
+		geometry = new THREE.CircleGeometry( 3, 6, theta1, theta2 );
+		geometry.vertices.shift();
+		this.cache.addGeometry('circle', geometry, [3, 6,]);
+	}
+
+	var material = this.cache.findMaterial( 0xff0000, 1);
+	if (!material) {
+		material = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:1} );
+		this.cache.addMaterial(material);
+	}
+
+    var circle = new THREE.Mesh( geometry, material );
+    circle.translateX(x1);
+    circle.translateY(y1);
+    circle.translateZ(0.03);
+    circle.visible = !StageMorph.prototype.ignoreWarnings;
+    stage.myArcCuts.add(circle);
+    this.reRender();
+};
 
 //**********************************************************
 
@@ -883,7 +954,6 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe, noShadow) {
 				this.addStitch(oldx, oldy, this.xPosition(), this.yPosition(), angle);
 				this.addStitchPoint(this.xPosition(), this.yPosition());
 				if (warn && !stage.turtleShepherd.ignoreWarning) {
-					this.addDensityPoint(this.xPosition(), this.yPosition());
 				}
 
 				if (this.parentThatIsA(StageMorph).turtleShepherd.isEmpty() || this.lastJumped)
@@ -1744,13 +1814,13 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'add machine: %s L %n W %n H %n',
         defaults: [localize('Name'), 0, 0, 0]
     };
-
-    /*
-    this.blocks.clear: {
+    
+    this.blocks.addTabHere = {
             type: 'command',
             category: 'cnc',
-            spec: 'clear'
-    },
+            spec: 'add tab here w %n h %n',
+            defaults: [0,0]
+    };
     /*
     this.blocks.down: {
         only: SpriteMorph,
@@ -2139,6 +2209,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('startCut'));
         blocks.push(block('endCut'));
         blocks.push(block('isCutting'));
+        blocks.push('-');
+        blocks.push(block('addTabHere'));
 
 	} else if (cat === 'colors') {
         blocks.push(block('setColor'));
@@ -2571,13 +2643,14 @@ StageMorph.prototype.init = function (globals) {
     this.scene.grid.draw();
     this.myObjects = new THREE.Object3D();
     this.myStitchPoints = new THREE.Object3D();
-    this.myDensityPoints = new THREE.Object3D();
-    this.myStitchLines = new THREE.Object3D();
+    this.myTabs = new THREE.Object3D();
+    this.myCutLines = new THREE.Object3D();
+    this.myArcCuts = new THREE.Object3D();
     this.myJumpLines = new THREE.Object3D();
     this.scene.add(this.myObjects);
     this.scene.add(this.myStitchPoints);
-    this.scene.add(this.myDensityPoints);
-    this.scene.add(this.myStitchLines);
+    this.scene.add(this.myTabs);
+    this.scene.add(this.myCutLines);
     this.scene.add(this.myJumpLines);
 
     this.initTurtle();
@@ -2684,11 +2757,14 @@ StageMorph.prototype.clearAll = function () {
     for (i = this.myStitchPoints.children.length - 1; i >= 0; i--) {
         this.myStitchPoints.remove(this.myStitchPoints.children[i]);
     }
-    for (i = this.myDensityPoints.children.length - 1; i >= 0; i--) {
-        this.myDensityPoints.remove(this.myDensityPoints.children[i]);
+    for (i = this.myCutLines.children.length - 1; i >= 0; i--) {
+        this.myCutLines.remove(this.myCutLines.children[i]);
     }
-    for (i = this.myStitchLines.children.length - 1; i >= 0; i--) {
-        this.myStitchLines.remove(this.myStitchLines.children[i]);
+    for (i = this.myArcCuts.children.length - 1; i >= 0; i--) {
+        this.myArcCuts.remove(this.myArcCuts.children[i]);
+    }
+    for (i = this.myTabs.children.length - 1; i >= 0; i--) {
+        this.myTabs.remove(this.myTabs.children[i]);
     }
     for (i = this.myJumpLines.children.length - 1; i >= 0; i--) {
         this.myJumpLines.remove(this.myJumpLines.children[i]);
@@ -2889,7 +2965,7 @@ StageMorph.prototype.initCamera = function () {
         myself.camera.fitScene = function () {
 
 
-            var boundingBox = new THREE.Box3().setFromObject(myself.myStitchLines),
+            var boundingBox = new THREE.Box3().setFromObject(myself.myCutLines),
                 boundingSphere = boundingBox.getBoundingSphere(),
                 center = boundingSphere.center,
                 distance = boundingSphere.radius;
@@ -3064,8 +3140,8 @@ StageMorph.prototype.reportMouseY = function () {
 /*
 StageMorph.prototype.turnXRayOn = function () {
   this.isXRay = true;
-  for (i = this.myStitchLines.children.length - 1; i >= 0; i--) {
-      this.myStitchLines.remove(this.myStitchLines.children[i]);
+  for (i = this.myCutLines.children.length - 1; i >= 0; i--) {
+      this.myCutLines.remove(this.myCutLines.children[i]);
   }
   stitches = this.turtleShepherd.getStitchesAsArr();
   this.renderer.setClearColor(new THREE.Color("rgb(0,0,0)"),1);
@@ -3096,8 +3172,8 @@ StageMorph.prototype.turnXRayOn = function () {
 
 StageMorph.prototype.turnXRayOff = function () {
   this.isXRay = false;
-  for (i = this.myStitchLines.children.length - 1; i >= 0; i--) {
-      this.myStitchLines.remove(this.myStitchLines.children[i]);
+  for (i = this.myCutLines.children.length - 1; i >= 0; i--) {
+      this.myCutLines.remove(this.myCutLines.children[i]);
   }
 
   stitches = this.turtleShepherd.getStitchesAsArr();
@@ -3263,7 +3339,7 @@ function Cache () {
 
 Cache.prototype.init = function () {
     this.materials = [];
-    this.geometries = { stitch: [], stitchPoint: [], densityPoint: [], circle: [], plane: [], meshline: [] };
+    this.geometries = { stitch: [], stitchPoint: [], circle: [], plane: [], meshline: [] };
 };
 
 Cache.prototype.clear = function () {
