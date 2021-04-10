@@ -66,7 +66,6 @@ TurtleShepherd.prototype.init = function() {
     this.pixels_per_millimeter = 5;
 	this.maxLength = 121;
     this.calcTooLong = true;
-    this.densityMax = 15;
     this.ignoreColors = false;
     this.ignoreWarning = false;
     this.backgroundColor = {r:0,g:0,b:0,a:1};
@@ -125,6 +124,9 @@ TurtleShepherd.prototype.clear = function() {
     this.feedRate = 500;
     this.newSpindleSpeed = false;
     this.spindleSpeed = 10000;
+
+    // tool
+    this.tool = false;
     
     // cut depth
     this.defaultCutDepth = -10;
@@ -150,10 +152,6 @@ TurtleShepherd.prototype.loadMaterials = function() {
         };
 
     return materials;
-}
-
-TurtleShepherd.prototype.setMaterial = function(material) {
-    this.material = material;
 }
 
 TurtleShepherd.prototype.getMaterials = function() {
@@ -395,7 +393,6 @@ TurtleShepherd.prototype.startCut = function () {
             "feedrate":this.feedRate
         }
     )
-    
 }
 
 TurtleShepherd.prototype.stopCut = function () {
@@ -432,6 +429,21 @@ TurtleShepherd.prototype.pushCutDepthNow = function() {
     this.newCutDepth = false;
 };
 
+TurtleShepherd.prototype.setTool = function(diameter, edges) {
+    this.tool = {
+        size : diameter,
+        flutes : edges
+    }
+}
+
+TurtleShepherd.prototype.getToolSize = function() {
+    if (this.tool.size === undefined) {
+        throw new Error('Tool size not set!');
+    };
+
+    return this.tool.size;
+}
+
 TurtleShepherd.prototype.setSpindleSpeed = function(s) {
 	this.newSpindleSpeed = s;
 };
@@ -463,12 +475,6 @@ TurtleShepherd.prototype.setSpindleSpeed = function(s) {
 };
 
 TurtleShepherd.prototype.setupWorkpiece = function(material, x, y, z) {
-    // Check if machine is already added
-    if (workpiece !== undefined) {
-        throw new Error("Workpiece already configured");
-    }
-
-	this.workpiece.material = material;
 
     var warning = false,
         machine = this.machine;
@@ -486,17 +492,18 @@ TurtleShepherd.prototype.setupWorkpiece = function(material, x, y, z) {
     if (warning) {
         throw new Error(warning);
     };
-
-    this.workpiece.dimensions.L = x;
-    this.workpiece.dimensions.W = y;
-    this.workpiece.dimensions.H = z;
+    
+	this.workpiece = {
+        material : material,
+        dimensions : {
+            L : x,
+            W : y,
+            H : z
+        }
+    };
 };
 
 TurtleShepherd.prototype.setMachine = function(makeNew, machine, x, y, z) {
-    // Check if machine is already added
-    if (machine !== undefined) {
-        throw new Error("Machine already configured");
-    }
 
     this.machine = machine;
 
@@ -524,13 +531,13 @@ TurtleShepherd.prototype.setMachine = function(makeNew, machine, x, y, z) {
     if (workDim.W > machineDim.W) {
         throw new Error("Machine dimensions are smaller than workpiece");
     } else {
-        this.bedLength = machineDim.W
+        this.bedWidth = machineDim.W
     }
 
     if (workDim.H > machineDim.H) {
         throw new Error("Machine dimensions are smaller than workpiece");
     } else {
-        this.bedLength = dim.H
+        this.bedHeight = machineDim.H
     }
 }
 

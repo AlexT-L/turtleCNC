@@ -693,6 +693,17 @@ SpriteMorph.prototype.setSize = function (size) {
 // CNC additions
 //*****************************************
 
+SpriteMorph.prototype.setTool = function (diameter, flutes){
+	var stage = this.parentThatIsA(StageMorph);
+    this.penSize = diameter;
+    stage.turtleShepherd.setTool(diameter, flutes);
+}
+
+SpriteMorph.prototype.getToolSize = function (){
+	var stage = this.parentThatIsA(StageMorph);
+    return stage.turtleShepherd.getToolSize();
+}
+
 SpriteMorph.prototype.clearCNC = function (){
 	this.clear();
 }
@@ -1308,7 +1319,7 @@ SpriteMorph.prototype.getColorHSV = function (){
 
 
 // PEN UP DOWN
-//
+/*
 SpriteMorph.prototype.isPenDown = function (){
 	return this.isDown;
 }
@@ -1325,7 +1336,7 @@ SpriteMorph.prototype.setSize = function (size) {
     stage.setPenSize(this.size);
     stage.turtleShepherd.setPenSize(this.size);
 };
-
+*/
 
 SpriteMorph.prototype.drawLine = function (start, dest) {};
 
@@ -1386,8 +1397,6 @@ THREE.Object3D.prototype.addLineFromPointToPointWithColor = function (originPoin
 
 SpriteMorph.prototype.resetAll = function () {
 	var myself = this;
-	myself.stitchtype = 0;
-	myself.stitchoptions = {};
 	myself.isRunning = false;
 	myself.setColor(StageMorph.prototype.defaultPenColor);
 	myself.parentThatIsA(StageMorph).setPenSize(1);
@@ -1395,13 +1404,6 @@ SpriteMorph.prototype.resetAll = function () {
 	myself.setHeading(90);
 	myself.clear();
 	myself.isDown = true;
-}
-
-SpriteMorph.prototype.resetStitchSettings = function () {
-	var myself = this;
-	myself.stitchoptions = {}
-	myself.stitchtype = 0;
-	myself.isRunning = false;
 }
 
 // Block specs
@@ -1648,6 +1650,23 @@ SpriteMorph.prototype.initBlocks = function () {
         type: 'command',
         category: 'cnc',
         spec: 'clear',
+    };
+    
+    this.blocks.setTool = 
+    {
+        only: SpriteMorph,
+        type: 'command',
+        spec: 'set tool: Diameter %n Cutting edges %n',
+        category: 'cnc',
+        defaults: [5, 1]
+    };
+    
+    this.blocks.getToolSize = 
+    {
+        only: SpriteMorph,
+        type: 'reporter',
+        spec: 'tool size',
+        category: 'cnc'
     };
     
     this.blocks.setSpindleSpeed = 
@@ -2109,6 +2128,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('setWorkpiece'));
         blocks.push(block('chooseMachine'));
         blocks.push(block('addMachine'));
+        blocks.push('-');
+        blocks.push(block('setTool'));
+        blocks.push(block('getToolSize'));
         blocks.push('-');
         blocks.push(block('setSpindleSpeed'));
         blocks.push(block('setCutDepth'));
