@@ -675,8 +675,8 @@ SpriteMorph.prototype.tatamiForwardEnd = function (steps, width=10) {
 }
 */
 
-SpriteMorph.prototype.setSize = function (size) {
-    var stage = this.parentThatIsA(StageMorph);
+SpriteMorph.prototype.setSize = function(size) {
+    let stage = this.parentThatIsA(StageMorph);
     if (!isNaN(size)) {
         this.size = Math.min(Math.max(+size, 0.0001), 1000);
     }
@@ -687,20 +687,23 @@ SpriteMorph.prototype.setSize = function (size) {
 // CNC additions
 //*****************************************
 
-SpriteMorph.prototype.addTabHere = function (w, h) {
-    var x, y;
-    x = this.xPosition();
-    y = this.yPosition();
-    this.addTab(x, y, w, h, this.heading);
+SpriteMorph.prototype.addTabHere = function(l, w) {
+    let x = this.xPosition(),
+        y = this.yPosition();
+    this.addTab(x, y, 90-this.heading, l, w);
 }
 
-SpriteMorph.prototype.setTool = function (diameter, flutes){
+SpriteMorph.prototype.addTabLocation = function(x, y, angle) {
+    this.addTab(x, y, angle);
+}
+
+SpriteMorph.prototype.setTool = function(diameter, flutes){
     if (!isNaN(diameter)) {
         this.size = Math.min(Math.max(+diameter, 0.0001), 1000);
     }
 	var stage = this.parentThatIsA(StageMorph);
     stage.setPenSize(this.size);
-    stage.turtleShepherd.setTool(diameter, flutes);
+    stage.turtleShepherd.setTool(Math.abs(diameter), flutes);
 }
 
 SpriteMorph.prototype.getToolSize = function (){
@@ -719,7 +722,7 @@ SpriteMorph.prototype.isCutting = function (){
 SpriteMorph.prototype.startCut = function (){
 	this.down();
     var stage = this.parentThatIsA(StageMorph);
-    stage.turtleShepherd.startCut();
+    stage.turtleShepherd.startCut(this.xPosition(), this.yPosition());
 }
 
 SpriteMorph.prototype.endCut = function (){
@@ -769,7 +772,20 @@ SpriteMorph.prototype.moveforward = function (steps) {
   }
 }
 
-SpriteMorph.prototype.addTab = function(x, y, w, h, angle=false ) {
+SpriteMorph.prototype.addTab = function(x, y, angle=false, length, width ) {
+    // Set dimensions automatically if not specified
+    let l = this.penSize(),
+        w = 0;
+
+    if (length) {
+        l = length;
+    }
+    if (width) {
+        w = width;
+    } else {
+        w = l;
+    }
+
   var stage = this.parentThatIsA(StageMorph);
 
   if (this.tabLines === null) {
@@ -792,30 +808,33 @@ SpriteMorph.prototype.addTab = function(x, y, w, h, angle=false ) {
 
 	// render as quads
 	if (true) {
-		var geometry = this.cache.findGeometry('plane', [w, h]);
+		var geometry = this.cache.findGeometry('plane', [l, w]);
 		if (!geometry) {
-			geometry = new THREE.PlaneGeometry( w, h, 1, 1);
-			this.cache.addGeometry('plane', geometry, [w, h]);
+			geometry = new THREE.PlaneGeometry( l, w, 1, 1);
+			this.cache.addGeometry('plane', geometry, [l, w]);
 		}
 
 		line = new THREE.Mesh(geometry, material);
 		line.translateX(x);
 		line.translateY(y);
     //if (!angle) angle = this.heading;
-		line.rotation.z = (90 - angle) * Math.PI / 180;
+		line.rotation.z = (angle) * Math.PI / 180;
 		stage.myTabs.add(line);
 	}
 	this.reRender();
+
+    // Add tab to TurtleShepherd
+    stage.turtleShepherd.addTab(x, y, l, w, angle);
 };
 
 SpriteMorph.prototype.addArcCut = function(x1, y1, theta1, theta2) {
     var stage = this.parentThatIsA(StageMorph);
 
-	var geometry = this.cache.findGeometry('circle', [3, 6,]);
+	var geometry = this.cache.findGeometry('arc', [3, 6,]);
 	if (!geometry) {
 		geometry = new THREE.CircleGeometry( 3, 6, theta1, theta2 );
 		geometry.vertices.shift();
-		this.cache.addGeometry('circle', geometry, [3, 6,]);
+		this.cache.addGeometry('arc', geometry, [3, 6,]);
 	}
 
 	var material = this.cache.findMaterial( 0xff0000, 1);
@@ -1818,9 +1837,17 @@ SpriteMorph.prototype.initBlocks = function () {
     this.blocks.addTabHere = {
             type: 'command',
             category: 'cnc',
-            spec: 'add tab here w %n h %n',
+            spec: 'add tab here l %n w %n',
             defaults: [0,0]
     };
+
+    this.blocks.addTabLocation = {
+            type: 'command',
+            category: 'cnc',
+            spec: 'add tab at x %n y %n heading %n',
+            defaults: [0,0,0]
+    };
+
     /*
     this.blocks.down: {
         only: SpriteMorph,
@@ -2211,6 +2238,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('isCutting'));
         blocks.push('-');
         blocks.push(block('addTabHere'));
+        blocks.push(block('addTabLocation'));
 
 	} else if (cat === 'colors') {
         blocks.push(block('setColor'));
