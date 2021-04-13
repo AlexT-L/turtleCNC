@@ -122,16 +122,17 @@ SpriteMorph.prototype.addStitch = function(x1, y1, x2, y2, angle=false ) {
 		var geometry = new THREE.Geometry();
 		var s = 2;
 
-		var w = Math.sqrt((x2-x1) * (x2-x1) +(y2-y1) * (y2-y1));
-		w = Math.round((w + 0.00001) * 100) / 100;
-		h = stage.penSize;
-		if (stage.penSize <= 1)
-			w = w; //- s;
+		let l = Math.sqrt((x2-x1) * (x2-x1) +(y2-y1) * (y2-y1)),
+		    w = stage.penSize;
 
-		var geometry = this.cache.findGeometry('plane', [w, h]);
+		l = Math.round((l + 0.00001) * 100) / 100;
+		if (stage.penSize <= 1)
+			l = l; //- s;
+
+		var geometry = this.cache.findGeometry('plane', [l, w]);
 		if (!geometry) {
-			geometry = new THREE.PlaneGeometry( w, stage.penSize, 1, 1);
-			this.cache.addGeometry('plane', geometry, [w, h]);
+			geometry = new THREE.PlaneGeometry( l, w, 1, 1);
+			this.cache.addGeometry('plane', geometry, [l, w]);
 		}
 
 		line = new THREE.Mesh(geometry, material);
@@ -446,6 +447,15 @@ SpriteMorph.prototype.forward = function (steps) {
   		}
     }
 };
+
+// New Movement
+SpriteMorph.prototype.arcClockwise = function(r, dtheta) {
+    this.moveArc(r, dtheta, true);
+};
+
+SpriteMorph.prototype.arcCounterClockwise = function(r, dtheta) {
+    this.moveArc(r, dtheta, false);
+}
 
 
 SpriteMorph.prototype.forwardByNr = function (totalsteps, steps) {
@@ -827,28 +837,121 @@ SpriteMorph.prototype.addTab = function(x, y, angle=false, length, width ) {
     stage.turtleShepherd.addTab(x, y, l, w, angle);
 };
 
-SpriteMorph.prototype.addArcCut = function(x1, y1, theta1, theta2) {
+SpriteMorph.prototype.moveArc = function(r, theta, clockwise) {
     var stage = this.parentThatIsA(StageMorph);
 
-	var geometry = this.cache.findGeometry('arc', [3, 6,]);
+    if (theta != 0) {
+	    /*warn = stage.turtleShepherd.arcTo(
+		    this.xPosition(), this.yPosition(),
+            r, theta, clockwise,
+		    this.isDown );*/
+
+	    if (this.isDown) {
+		    this.addArcCut(r, theta, clockwise);
+	    } else {
+		    //this.addJumpArc(oldx, oldy, this.xPosition(), this.yPosition());
+	    }
+	    //stage.moveTurtleArc(r, theta, clockwise);
+    }
+}
+
+SpriteMorph.prototype.addArcCut = function(r, dtheta, clockwise) {
+    var stage = this.parentThatIsA(StageMorph);
+    
+    // Find theta1 and center
+    let x1 = this.xPosition(),
+        y1 = this.yPosition(),
+        theta1 = 90 - this.heading,
+        theta2 = theta1 + dtheta,
+        theta1Rad = theta1 * Math.PI/180,
+        theta2Rad = theta2 * Math.PI/180,
+        dthetaRad = dtheta * Math.PI/180,
+        xc = x1 - r*Math.cos(theta1Rad),
+        yc = y1 - r*Math.sin(theta1Rad),
+        t = this.penSize()/2; // thickness of arc
+
+    // Geometry of cut
+    let geometry = this.cache.findGeometry('arc', [r-t, r+t, Math.round(dthetaRad*r), 1, 0, dthetaRad,]),
+        debugcoloring = true;
 	if (!geometry) {
-		geometry = new THREE.CircleGeometry( 3, 6, theta1, theta2 );
-		geometry.vertices.shift();
-		this.cache.addGeometry('arc', geometry, [3, 6,]);
+		geometry = new THREE.RingGeometry( r-t, r+t, Math.round(dthetaRad*r), 1, 0, dthetaRad );
+		this.cache.addGeometry('arc', geometry, [r-t, r+t, Math.round(dthetaRad*r), 1, 0, dthetaRad,]);
+	};
+    
+    // Color
+    let arcColor = new THREE.Color("rgb("+
+                    Math.round(this.color.r) + "," +
+                    Math.round(this.color.g) + "," +
+                    Math.round(this.color.b)  + ")" 
+                    ),
+        arcOpacity = this.color.a;
+    
+	let material = this.cache.findMaterial( arcColor, arcOpacity);
+	if (!material) {
+		material = new THREE.MeshBasicMaterial( { color: arcColor, opacity: arcOpacity} );
+		this.cache.addMaterial(material);
 	}
 
-	var material = this.cache.findMaterial( 0xff0000, 1);
+    //if (debugcoloring) {material = this.cache.findMaterial( 0xff0000, 1);}
+
+    // Create arc and put into position
+    let arc = new THREE.Mesh( geometry, material );
+    // Turn Clockwise or Counterclockwise based on input
+    if (clockwise) {
+        let angle2 = theta1Rad + Math.PI/2,
+            angle1 = angle2-dthetaRad,
+            x = x1 - r*Math.cos(angle2),
+            y = y1 - r*Math.sin(angle2),
+            xb = x*Math.cos(angle1) + y*Math.sin(angle1),
+            yb = y*Math.cos(angle1) - x*Math.sin(angle1);
+        arc.rotateZ(angle1);
+        arc.translateX(xb);
+        arc.translateY(yb);
+    } else { // counter clockwise
+        let angle = theta1Rad-Math.PI/2,
+            x = x1 - r*Math.cos(angle),
+            y = y1 - r*Math.sin(angle),
+            xb = x*Math.cos(angle) + y*Math.sin(angle),
+            yb = y*Math.cos(angle) - x*Math.sin(angle);
+        arc.rotateZ(angle);
+        arc.translateX(xb);
+        arc.translateY(yb);
+    };
+
+    // Add to scene
+    stage.myArcCuts.add(arc);
+    this.reRender();
+};
+
+SpriteMorph.prototype.addStopPoint = function() {
+    var stage = this.parentThatIsA(StageMorph),
+        r = this.penSize()/2;
+        s = Math.max(r,50);
+
+	var geometry = this.cache.findGeometry('circle', [ r, s,]);
+	if (!geometry) {
+		geometry = new THREE.CircleGeometry( r, s );
+		geometry.vertices.shift();
+		this.cache.addGeometry('circle', geometry, [r, s,]);
+	}
+
+	let pColor = new THREE.Color("rgb("+
+                    Math.round(this.color.r) + "," +
+                    Math.round(this.color.g) + "," +
+                    Math.round(this.color.b)  + ")" 
+                    ),
+        pOpacity = this.color.a;
+
+    let material = this.cache.findMaterial( pColor, pOpacity);
 	if (!material) {
-		material = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:1} );
+		material = new THREE.MeshBasicMaterial( { color: arcColor, opacity: arcOpacity} );
 		this.cache.addMaterial(material);
 	}
 
     var circle = new THREE.Mesh( geometry, material );
-    circle.translateX(x1);
-    circle.translateY(y1);
-    circle.translateZ(0.03);
-    circle.visible = !StageMorph.prototype.ignoreWarnings;
-    stage.myArcCuts.add(circle);
+    circle.translateX(this.xPosition());
+    circle.translateY(this.yPosition());
+    stage.myStopPoints.add(circle);
     this.reRender();
 };
 
@@ -872,26 +975,19 @@ SpriteMorph.prototype.doMoveForward = function (steps) {
 	if (dist != 0) {
 		this.setPosition(dest);
 
-    var isFirst = this.parentThatIsA(StageMorph).turtleShepherd.isEmpty();
-		warn = stage.turtleShepherd.moveTo(
-			oldx, oldy,
-			this.xPosition(), this.yPosition(),
-			this.isDown );
+	    warn = stage.turtleShepherd.moveTo(
+		    oldx, oldy,
+		    this.xPosition(), this.yPosition(),
+		    this.isDown );
 
-		if (this.isDown) {
-			this.addStitch(oldx, oldy, this.xPosition(), this.yPosition(), this.heading);
-			this.addStitchPoint(this.xPosition(), this.yPosition());
-      
-			if (isFirst || this.lastJumped ) {
-				this.addStitchPoint(oldx,oldy);
-			}
-      this.lastJumped = false;
-		} else {
-			this.addJumpLine(oldx, oldy, this.xPosition(), this.yPosition());
-      this.lastJumped = true;
-		}
-		stage.moveTurtle(this.xPosition(), this.yPosition());
-	}
+	    if (this.isDown) {
+		    this.addStitch(oldx, oldy, this.xPosition(), this.yPosition(), this.heading);
+            this.addStopPoint();
+	    } else {
+		    this.addJumpLine(oldx, oldy, this.xPosition(), this.yPosition());
+	    }
+	    stage.moveTurtle(this.xPosition(), this.yPosition());
+    }
 }
 
 SpriteMorph.prototype.origGotoXY = SpriteMorph.prototype.gotoXY;
@@ -1594,6 +1690,23 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'text length of %s with size %n',
         defaults: ["hello", 21]
     };
+    // Movement additions
+    this.blocks.arcClockwise = 
+    {
+        only: SpriteMorph,
+        type: 'command',
+        category: 'motion',
+        spec: '%clockwise arc radius %n angle %n',
+        defaults: [0, 0]
+    };
+    this.blocks.arcCounterClockwise = 
+    {
+        only: SpriteMorph,
+        type: 'command',
+        category: 'motion',
+        spec: '%counterclockwise arc radius %n angle %n',
+        defaults: [0, 0]
+    }
 
     // pen blocks
 
@@ -2072,6 +2185,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('forward'));
         //blocks.push(block('forwardByNr'));
         //blocks.push(block('forwardBy'));
+        blocks.push(block('arcClockwise'));
+        blocks.push(block('arcCounterClockwise'));
         blocks.push('-');
         blocks.push(block('turn'));
         blocks.push(block('turnLeft'));
@@ -2084,7 +2199,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         //blocks.push(block('gotoXYIn'));
         //blocks.push(block('gotoXYBy'));
         blocks.push(block('doGotoObject'));
-        blocks.push(block('doGlide'));
+        //blocks.push(block('doGlide'));
         blocks.push('-');
         blocks.push(block('changeXPosition'));
         blocks.push(block('setXPosition'));
@@ -2672,14 +2787,19 @@ StageMorph.prototype.init = function (globals) {
     this.myObjects = new THREE.Object3D();
     this.myStitchPoints = new THREE.Object3D();
     this.myTabs = new THREE.Object3D();
+    this.myStopPoints = new THREE.Object3D();
     this.myCutLines = new THREE.Object3D();
     this.myArcCuts = new THREE.Object3D();
     this.myJumpLines = new THREE.Object3D();
+    this.myJumpArcs = new THREE.Object3D();
     this.scene.add(this.myObjects);
     this.scene.add(this.myStitchPoints);
     this.scene.add(this.myTabs);
+    this.scene.add(this.myStopPoints);
     this.scene.add(this.myCutLines);
+    this.scene.add(this.myArcCuts);
     this.scene.add(this.myJumpLines);
+    this.scene.add(this.myJumpArcs);
 
     this.initTurtle();
 };
@@ -2791,11 +2911,17 @@ StageMorph.prototype.clearAll = function () {
     for (i = this.myArcCuts.children.length - 1; i >= 0; i--) {
         this.myArcCuts.remove(this.myArcCuts.children[i]);
     }
+    for (i = this.myStopPoints.children.length - 1; i >= 0; i--) {
+        this.myStopPoints.remove(this.myStopPoints.children[i]);
+    }
     for (i = this.myTabs.children.length - 1; i >= 0; i--) {
         this.myTabs.remove(this.myTabs.children[i]);
     }
     for (i = this.myJumpLines.children.length - 1; i >= 0; i--) {
         this.myJumpLines.remove(this.myJumpLines.children[i]);
+    }
+    for (i = this.myJumpArcs.children.length - 1; i >= 0; i--) {
+        this.myJumpArcs.remove(this.myJumpArcs.children[i]);
     }
 
     this.renderer.clear();
@@ -3367,7 +3493,7 @@ function Cache () {
 
 Cache.prototype.init = function () {
     this.materials = [];
-    this.geometries = { stitch: [], stitchPoint: [], circle: [], plane: [], meshline: [] };
+    this.geometries = { stitch: [], circle: [], stitchPoint: [], arc: [], plane: [], meshline: [] };
 };
 
 Cache.prototype.clear = function () {
