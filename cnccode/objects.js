@@ -837,37 +837,71 @@ SpriteMorph.prototype.addTab = function(x, y, angle=false, length, width ) {
     stage.turtleShepherd.addTab(x, y, l, w, angle);
 };
 
-SpriteMorph.prototype.moveArc = function(r, theta, clockwise) {
+SpriteMorph.prototype.moveArc = function(r, dtheta, clockwise) {
     var stage = this.parentThatIsA(StageMorph);
 
-    if (theta != 0) {
-	    /*warn = stage.turtleShepherd.arcTo(
-		    this.xPosition(), this.yPosition(),
-            r, theta, clockwise,
-		    this.isDown );*/
+    let x1 = this.xPosition(),
+	    y1 = this.yPosition(),
+        dxb, dyb;
+
+    // calculate movement in body frame
+    if (clockwise) {
+        dxb = r*(Math.cos(radians(dtheta)) - 1);
+        dyb = r*Math.sin(radians(dtheta));
+    } else {
+        dxb = dxb = r*(Math.cos(radians(-dtheta)) - 1);
+        dyb = r*Math.sin(radians(-dtheta));
+    }
+
+    // Find dx2, dy2 and distance
+    let theta1 = 90 - this.heading,
+        dx2 = dxb*Math.cos(radians(theta1)) - dyb*Math.sin(radians(theta1)),
+        dy2 = dyb*Math.cos(radians(theta1)) + dxb*Math.sin(radians(theta1)),
+        dist = Math.sqrt(dx2**2 + dy2**2),
+        chordHeading, newHeading;
+
+    if (clockwise) { 
+        chordHeading = 90 - (theta1 - dtheta/2);
+        newHeading = 90 - (theta1 - dtheta);
+    } else { 
+        chordHeading = 90 - (theta1 + dtheta/2);
+        newHeading = 90 - (theta1 + dtheta);
+    };
+
+
+    // Move sprite & turtle and register cut
+	if (dtheta >= 0) {
+		dest = this.position().distanceAngle(dist, chordHeading);
+	} else {
+		dest = this.position().distanceAngle(Math.abs(dist),  (chordHeading - 180));
+	}
+
+    if (dtheta != 0) {
+		this.setPosition(dest);
+        this.setHeading(newHeading);
+
+        let theta1c = clockwise ? theta1+90 : theta1-90,
+            theta2c = clockwise ? theta1c-dtheta : theta1c+dtheta;
+	    warn = stage.turtleShepherd.arcTo(x1, y1, r, theta1c, theta2c, clockwise, this.isDown );
 
 	    if (this.isDown) {
-		    this.addArcCut(r, theta, clockwise);
+		    this.addArcCut(x1, y1, theta1, r, dtheta, clockwise);
+            this.addStopPoint(this.xPosition(), this.yPosition());
 	    } else {
-		    //this.addJumpArc(oldx, oldy, this.xPosition(), this.yPosition());
+		    this.addJumpArc(x1, y1, theta1, r, dtheta, clockwise);
 	    }
-	    //stage.moveTurtleArc(r, theta, clockwise);
+	    stage.moveTurtle(this.xPosition(), this.yPosition());
     }
 }
 
-SpriteMorph.prototype.addArcCut = function(r, dtheta, clockwise) {
+SpriteMorph.prototype.addArcCut = function(x1, y1, theta1, r, dtheta, clockwise) {
     var stage = this.parentThatIsA(StageMorph);
     
     // Find theta1 and center
-    let x1 = this.xPosition(),
-        y1 = this.yPosition(),
-        theta1 = 90 - this.heading,
-        theta2 = theta1 + dtheta,
+    let theta2 = theta1 + dtheta,
         theta1Rad = theta1 * Math.PI/180,
         theta2Rad = theta2 * Math.PI/180,
         dthetaRad = dtheta * Math.PI/180,
-        xc = x1 - r*Math.cos(theta1Rad),
-        yc = y1 - r*Math.sin(theta1Rad),
         t = this.penSize()/2; // thickness of arc
 
     // Geometry of cut
@@ -920,6 +954,98 @@ SpriteMorph.prototype.addArcCut = function(r, dtheta, clockwise) {
 
     // Add to scene
     stage.myArcCuts.add(arc);
+    this.reRender();
+};
+
+SpriteMorph.prototype.addJumpArc = function(x1, y1, theta1, r, dtheta, clockwise) {
+    var stage = this.parentThatIsA(StageMorph);
+
+    // Draw as simple 2D curve
+    if (false) {
+        let geometry = this.cache.findGeometry('jumpArc', [x1, x2, r, theta1, theta1 + dtheta, clockwise,]);
+	    if (!geometry) {
+		    let curve = new THREE.ArcCurve(
+                    0, 0,             // ax, aY
+                    r,                  // aRadius
+                    0, radians(dtheta), // aStartAngle, aEndAngle
+                    false             // aClockwise
+                    ),
+                points = curve.getSpacedPoints( 20 ),
+                path = new THREE.Path();
+
+            geometry = path.createGeometry( points );
+		    this.cache.addGeometry('jumpArc', geometry, [r, dtheta, clockwise,]);
+	    }
+
+        let material = new THREE.LineBasicMaterial( { color : 0xff0000 } ),
+            arc = new THREE.Line( geometry, material );
+    };
+
+
+    // draw as dashed smeshline
+    if (true) {
+		color = new THREE.Color("rgb(255,0,0)");
+		//var geometry = this.cache.findGeometry('jumpArc', [x1,y1,x2,y2, color, 0.8]);
+		//if (!geometry) {
+			let curve = new THREE.ArcCurve(
+                    0, 0,             // ax, aY
+                    r,                  // aRadius
+                    0, radians(dtheta), // aStartAngle, aEndAngle
+                    false             // aClockwise
+                    ),
+                //segments = Math.min(90,  Math.max(1, Math.round((dtheta % 360)/4))  ),
+                points = curve.getSpacedPoints( 20 ),
+                path = new THREE.Path();
+
+            geometry = path.createGeometry( points );
+			var g = new MeshLine();
+			g.setGeometry( geometry );
+
+			//this.cache.addGeometry('jumpArc', g,  [x1,y1,x2,y2, color, this.color.a]);
+		//}
+
+		var material = new MeshLineMaterial( {
+				useMap: false,
+				color: new THREE.Color( color ),
+				opacity: 0.8,
+				resolution: new THREE.Vector2( stage.width(), stage.height() ),
+				sizeAttenuation: true,
+				lineWidth: .003,
+				dashArray: 0.06,
+				dashOffset: 0,
+				dashRatio: 0.35
+		});
+		material.transparent = true;
+		var arc = new THREE.Mesh( g.geometry, material );
+		//stage.myJumpLines.add(mesh);
+    }
+
+
+    // move arc into position
+    // Turn Clockwise or Counterclockwise based on input
+    if (clockwise) {
+        let angle2 = radians(theta1 + 90),
+            angle1 = angle2 - radians(dtheta),
+            x = x1 - r*Math.cos(angle2),
+            y = y1 - r*Math.sin(angle2),
+            xb = x*Math.cos(angle1) + y*Math.sin(angle1),
+            yb = y*Math.cos(angle1) - x*Math.sin(angle1);
+        arc.rotateZ(angle1);
+        arc.translateX(xb);
+        arc.translateY(yb);
+    } else { // counter clockwise
+        let angle = radians(theta1 - 90),
+            x = x1 - r*Math.cos(angle),
+            y = y1 - r*Math.sin(angle),
+            xb = x*Math.cos(angle) + y*Math.sin(angle),
+            yb = y*Math.cos(angle) - x*Math.sin(angle);
+        arc.rotateZ(angle);
+        arc.translateX(xb);
+        arc.translateY(yb);
+    };
+
+    // Add to scene
+    stage.myJumpArcs.add(arc);
     this.reRender();
 };
 
@@ -1347,7 +1473,6 @@ SpriteMorph.prototype.setHeading = function (degrees) {
 SpriteMorph.prototype.setColor = function (aColor) {
     var stage = this.parentThatIsA(StageMorph);
     this.color = aColor;
-    stage.turtleShepherd.addColorChange(this.color);
     stage.turtle.material.color = new THREE.Color("rgb("+this.color.r + "," + this.color.g + "," + this.color.b + ")");
     this.reRender();
 };
@@ -2753,7 +2878,6 @@ StageMorph.prototype.init = function (globals) {
     console.log("init stage");
     this.turtleShepherd = new TurtleShepherd();
     this.turtleShepherd.ignoreWarning = StageMorph.prototype.ignoreWarnings;
-    this.turtleShepherd.setDefaultColor(StageMorph.prototype.defaultPenColor);
 
     this.originalInit(globals);
     this.initScene();
@@ -2952,7 +3076,6 @@ StageMorph.prototype.initRenderer = function () {
 
       this.renderer.setBackgroundColor = function(color) {
         StageMorph.prototype.backgroundColor  = color;
-        myself.turtleShepherd.setBackgroundColor(color);
         myself.renderer.setClearColor(
             new THREE.Color("rgb("+color.r + "," + color.g + "," + color.b + ")"),
         1);
@@ -3003,7 +3126,6 @@ StageMorph.prototype.initRenderer = function () {
     		g = parseInt(result[2], 16);
     		b = parseInt(result[3], 16);
         StageMorph.prototype.backgroundColor = new Color(r, g, b);
-        myself.turtleShepherd.setBackgroundColor(StageMorph.prototype.backgroundColor);
     		myself.renderer.setBackgroundColor(StageMorph.prototype.backgroundColor);
       }
       myself.reRender();
@@ -3023,7 +3145,6 @@ StageMorph.prototype.initRenderer = function () {
         g = parseInt(result[2], 16);
         b = parseInt(result[3], 16);
         StageMorph.prototype.defaultPenColor = new Color(r, g, b);
-        myself.turtleShepherd.setDefaultColor(StageMorph.prototype.defaultPenColor);
       }
       myself.reRender();
     }
@@ -3493,7 +3614,7 @@ function Cache () {
 
 Cache.prototype.init = function () {
     this.materials = [];
-    this.geometries = { stitch: [], circle: [], stitchPoint: [], arc: [], plane: [], meshline: [] };
+    this.geometries = { stitch: [], circle: [], stitchPoint: [], jumpArc: [], arc: [], plane: [], meshline: [] };
 };
 
 Cache.prototype.clear = function () {

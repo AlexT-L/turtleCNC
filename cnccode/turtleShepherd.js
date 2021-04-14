@@ -10,6 +10,8 @@
 
 // Create default libraries (units are in mm by default, converted to in if needed)
 
+var PI = Math.PI;
+
 var materials = {},
     machines = {},
     mm2in = 1/25.4;
@@ -67,10 +69,7 @@ TurtleShepherd.prototype.init = function() {
     this.pixels_per_millimeter = 5;
 	this.maxLength = 121;
     this.calcTooLong = true;
-    this.ignoreColors = false;
     this.ignoreWarning = false;
-    this.backgroundColor = {r:0,g:0,b:0,a:1};
-    this.defaultColor = {r:0,g:0,b:0,a:1};
 
     // Drilling parameters
     this.speedup = 2; // Speed up time (s)
@@ -112,9 +111,6 @@ TurtleShepherd.prototype.clear = function() {
     this.tooLongCount = 0;
     this.density = {};
     this.densityWarning = false;
-    this.colors = [];
-    this.newColor = 0;
-    this.oldColor =  this.defaultColor;
 	this.penSize = 1;
     this.newPenSize = 0;
     this.bedWarning = 0;
@@ -189,14 +185,6 @@ TurtleShepherd.prototype.setMetric = function(b) {
 
 TurtleShepherd.prototype.isMetric = function() {
     return this.metric;
-};
-
-TurtleShepherd.prototype.getIgnoreColors = function() {
-    return this.ignoreColors;
-};
-
-TurtleShepherd.prototype.toggleIgnoreColors = function() {
-    this.ignoreColors = !this.ignoreColors;
 };
 
 TurtleShepherd.prototype.isEmpty = function() {
@@ -299,7 +287,7 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState, depthchange)
         depthChange = 0;
     } else { depthChange = depthchange};
 
-	warn = false
+	warn = false;
 
     if (this.steps === 0) {
         this.initX = x1;
@@ -308,31 +296,7 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState, depthchange)
         this.minY = y1;
         this.maxX = x1;
         this.maxY = y1;
-        /*
-        this.cache.push(
-            {
-                "cmd":"move",
-                "x":x1,
-                "y":y1,
-                "pendown":penState,
-                
-                // New gcode additions
-                "cutdepth":this.cutDepth
-            }
-        );*/
-        this.density[Math.round(x1) + "x" + Math.round(y1)] = 1;
-        if (this.colors.length < 1) {
-			if (this.newColor) {
-				this.colors.push(this.newColor);
-			} else {
-				this.colors.push(this.defaultColor);
-			}
-		}
     }
-
-    if (this.newColor) {
-		this.pushColorChangeNow();
-	}
 
     if (this.newPenSize) {
 		this.pushPenSizeNow();
@@ -342,24 +306,6 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState, depthchange)
 	if (x2 > this.maxX) this.maxX = x2;
 	if (y2 < this.minY) this.minY = y2;
 	if (y2 > this.maxY) this.maxY = y2;
-
-	if ( this.calcTooLong && penState) {
-    dist = Math.sqrt( (x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) );
-		if ( (dist / this.pixels_per_millimeter * 10) > this.maxLength)
-			this.tooLongCount += 1;
-	}
-    /*
-    this.cache.push(
-        {
-            "cmd":"move",
-            "x":x2,
-            "y":y2,
-            "pendown":penState,
-                
-            // New gcode additions
-            "cutdepth":this.cutDepth
-        }
-    );*/
 
     this.l = this.maxX - this.minX;
     this.w = this.maxY - this.minY;
@@ -374,11 +320,7 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState, depthchange)
 	this.lastX = x2;
 	this.lastY = y2;
 
-    // CNC commands
-    /*if (this.newCutDepth) {
-        this.pushCutDepthNow();
-    }*/
-
+    // CNC command
     this.cache.push(
         {
             "cmd":"move",
@@ -404,7 +346,76 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState, depthchange)
 // CNC addition
 //***********************************************************
 
+TurtleShepherd.prototype.arcTo = function(x1, y1, r, theta1, theta2, clockwise, penState, depthchange ) {
+    // Set depthChange to zero if undefined
+    let depthChange;
+    if (depthchange === undefined) { 
+        depthChange = 0;
+    } else { depthChange = depthchange};
+
+	warn = false;
+
+    if (this.steps === 0) {
+        this.initX = x1;
+        this.initY = y1;
+        this.minX = x1;
+        this.minY = y1;
+        this.maxX = x1;
+        this.maxY = y1;
+    }
+
+    if (this.newPenSize) {
+		this.pushPenSizeNow();
+	}
+    /*
+	if (x2 < this.minX) this.minX = x2;
+	if (x2 > this.maxX) this.maxX = x2;
+	if (y2 < this.minY) this.minY = y2;
+	if (y2 > this.maxY) this.maxY = y2;
+    */
+    this.l = this.maxX - this.minX;
+    this.w = this.maxY - this.minY;
+    this.h = this.maxY - this.minY;
+
+    if (!penState)
+        this.jumpCount++;
+    else {
+        this.steps++;
+    }
+
+	//this.lastX = x2;
+	//this.lastY = y2;
+
+    // CNC command
+    let radians = (Math.PI / 180) * theta1,
+        xc = x1 - r*Math.cos(radians),
+        yc = y1 - r*Math.cos(radians);
+
+    this.cache.push(
+        {
+            "cmd":"arc",
+            "xc":xc,
+            "yc":yc,
+            "r":r,
+            "theta1":theta1,
+            "theta2":theta2,
+            "clockwise":clockwise,
+            "pendown":penState,
+            "cutdepth":this.cutDepth,
+            "depthchange":depthChange
+        }
+    );
+
+    if (warn) {
+		warn = false;
+		return [x1, y1];
+	} else {
+		return false;
+	}
+};
+
 TurtleShepherd.prototype.startCut = function (x, y) {
+    this.penDown = true;
     this.cache.push(
         {
             "cmd":"startcut",
@@ -416,6 +427,7 @@ TurtleShepherd.prototype.startCut = function (x, y) {
 }
 
 TurtleShepherd.prototype.stopCut = function () {
+    this.penDown = false;
     this.cache.push(
         {
             "cmd":"stopcut"
@@ -611,83 +623,6 @@ TurtleShepherd.prototype.getRangeWarning = function() {
 //***********************************************************
 
 
-TurtleShepherd.prototype.setDefaultColor= function(color) {
-	var c = {
-		r: Math.round(color.r),
-		g: Math.round(color.g),
-		b: Math.round(color.b),
-		a: color.a
-	};
-	this.defaultColor = c;
-};
-
-TurtleShepherd.prototype.getDefaultColorAsHex = function (){
-	return new String(
-    "#" + (
-      (1 << 24)
-    + (Math.round(this.defaultColor.r) << 16)
-    + (Math.round(this.defaultColor.g) << 8)
-	  + Math.round(this.defaultColor.b)
-   ).toString(16).slice(1));
-};
-
-TurtleShepherd.prototype.setBackgroundColor= function(color) {
-	var c = {
-		r: Math.round(color.r),
-		g: Math.round(color.g),
-		b: Math.round(color.b),
-		a: color.a
-	};
-	this.backgroundColor = c;
-};
-
-TurtleShepherd.prototype.getBackgroundColorAsHex = function (){
-	return new String(
-    "#" + (
-      (1 << 24)
-    + (Math.round(this.backgroundColor.r) << 16)
-    + (Math.round(this.backgroundColor.g) << 8)
-	  + Math.round(this.backgroundColor.b)
-   ).toString(16).slice(1));
-}
-
-TurtleShepherd.prototype.addColorChange= function(color) {
-	var c = {
-		r: Math.round(color.r),
-		g: Math.round(color.g),
-		b: Math.round(color.b),
-		a: color.a
-	};
-	this.newColor = c;
-};
-
-TurtleShepherd.prototype.pushColorChangeNow = function() {
-
-	c = this.newColor;
-	o = this.oldColor;
-
-	if (c.r == o.r && c.g == o.g && c.b == o.b && c.a == o.a) {
-		this.newColor = false;
-		return;
-	}
-
-	index = this.colors.findIndex(x => (x.r == c.r && x.b == x.b && x.g == c.g && x.a == c.a) );
-
-	if (index < 0) {
-		index = this.colors.push(this.newColor)-1;
-	}
-
-    this.cache.push(
-        {
-            "cmd":"color",
-            "color": this.newColor,
-            "thread": index
-        }
-    );
-	this.oldColor = this.newColor;
-    this.newColor = false;
-};
-
 TurtleShepherd.prototype.setPenSize = function(s) {
 	this.newPenSize = s;
 };
@@ -738,6 +673,9 @@ TurtleShepherd.prototype.getTabHeight = function() {
 }
 
 TurtleShepherd.prototype.drillIntoTab = function(x, y, cutDepth) {
+    if (cutDepth > (this.workpiece.dimensions.H - this.getTabHeight())) {
+        return this.isInTab(x,y);
+    };
     return false;
 }
 
@@ -868,21 +806,158 @@ TurtleShepherd.prototype.lineCut = function(x2, y2, depthchange, currentDepth) {
     return "G1 X" + x2 + " Y" + y2 + "\n";
 };
 
-TurtleShepherd.prototype.getFreeArc = function(xc, yc, x2, y2, angle, clockwise) {
-    let r = Math.sqrt( (x2-xc)*(x2-xc) + (y2-yc)*(y2-yc) ),
-        radians = (Math.PI / 180) * angle,
-        x1 = xc + r*Math.cos(radians),
-        y1 = xc + r*Math.cos(radians);
+TurtleShepherd.prototype.getFreeArc = function(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthchange) {
+    // Tolerance
+    let theta1Rad = (Math.PI / 180) * theta1,
+        theta2Rad = (Math.PI / 180) * theta2,
+        tol = 0.0001;
+
+    let depthChange;
+    if (depthchange === undefined) {
+        depthChange = 0;
+    } else { depthChange = depthchange };
+
+    return this.getFreeArcRecursive(xc, yc, r, theta1Rad, theta2Rad, clockwise, cutDepth, depthchange,  tol, this.copyTabs());
 };
 
-TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, x2, y2, angle, clockwise) {
-    let r = Math.sqrt( (x2-xc)*(x2-xc) + (y2-yc)*(y2-yc) ),
-        radians = (Math.PI / 180) * angle,
-        x1 = xc + r*Math.cos(radians),
-        y1 = xc + r*Math.cos(radians);
+TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthchange,  tolerance, tabs) {
+    let X1 = xc + r*Math.cos(theta1),
+        Y1 = yc + r*Math.sin(theta1),
+        X2 = xc + r*Math.cos(theta2),
+        Y2 = yc + r*Math.sin(theta2);
+
+    let depthChange = depthchange,
+        tol = tolerance,
+        tabsToCheck = tabs;
+
+    if (depthChange === undefined) {depthChange = 0};
+
+    let endDepth = depthChange ? (cutDepth+ depthChange) : 0;
+
+    if (!tabsToCheck.length) { // No tabs, we're fine
+        return "//No tabs \n" + this.arcCut(xc-X1, yc-Y1, X2, Y2, clockwise, endDepth);
+    };
+    
+    // Check first tab
+    let int = []; // array of intersection angles
+
+    // pop off another tab and check it
+    let tab = tabsToCheck.pop().pop();
+
+    while (tab.length) {
+        let edge = tab.pop(),
+            u = edge[0],
+            v = edge[1],
+            c = [xc, yc];
+    
+        // Get distance from center of circle to line (continue if < r)
+        let vc_0 = this.minus(u, c), // vector from center to endpoint of line
+            vc_0proj = this.scale( v, this.dot(vc_0, v)/this.norm(v) ), // projection along direction of line
+            pdist = this.norm(vc_0proj),                     // parallel distance
+            ndist = this.norm( this.minus(vc_0, vc_0proj) ); // normal distance
+        
+        if (ndist > r) {continue};
+        
+        // rotate edge of tab so that it's horizontal
+        let phi = Math.acos(v[0]/this.norm(v)) * this.sign(v[1]),
+            u0 = this.rotatePoint(u, -phi),
+            v0 = this.rotatePoint(v, -phi);
+
+        // find radius of slice of circle
+        let h = u0[1] - yc,
+            d = Math.sqrt(r*r - h*h);
+
+        // determine if line intersects
+        let s1 = ((xc-d)-u0[0]) / v0[0],
+            s2 = ((xc+d)-u0[0]) / v0[0],
+            phi1 = Math.acos(-d/r) * this.sign(h),
+            phi2 = Math.acos(d/r) * this.sign(h);
+
+        if (s1 > 0 && s1 < 1) {
+            let thetaInt = (phi + phi1 + 2*PI) % (2*PI);
+
+            if (clockwise) {
+                if ( ((theta1 + 2*PI) % (2*PI) > thetaInt) && ((theta2 + 2*PI) % (2*PI) < thetaInt) ) {
+                    int.push([thetaInt]);
+                }
+            } else {
+                if ( ((theta1 + 2*PI) % (2*PI) > thetaInt) && ((theta2 + 2*PI) % (2*PI) < thetaInt) ) {
+                    int.push([thetaInt]);
+                }
+            }
+        }
+
+        if (s2 > 0 && s2 < 1) {
+            let thetaInt = (phi + phi2 + 2*PI) % (2*PI);
+
+            if (clockwise) {
+                if ( ((theta1 + 2*PI) % (2*PI) > thetaInt) && ((theta2 + 2*PI) % (2*PI) < thetaInt) ) {
+                    int.push([thetaInt]);
+                }
+            } else {
+                if ( ((theta1 + 2*PI) % (2*PI) < thetaInt) && ((theta2 + 2*PI) % (2*PI) > thetaInt) ) {
+                    int.push([thetaInt]);
+                }
+            }
+        };
+    };
+    
+    // No intersections means are either entirely inside or outside tab
+    // if we are in tab, don't make cut (still allows vertical drill into tab)
+    if (int.length == 0) {
+        if (this.isInTab(X1, Y1) || this.isInTab(X2, Y2)) {
+            return "//Completely inside tab " + this.arcCut(xc-X1, yc-Y1, X2, Y2, clockwise, false);
+        };
+        return "//No intersections on arc" + this.getFreeArcRecursive(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabs));
+    };
+    
+    // add start and end angles and sort
+    int.push([theta1]);
+    int.push([theta2]);
+    let thetaCut,
+        output = "";
+
+    if (clockwise) {thetaCut = this.negative(int).sort(function(a,b) {return a-b})}
+    else {thetaCut = int.sort(function(a,b) {return a-b})}
+    
+    for (let i = 1; i < thetaCut.length; i++) {
+        let th1 = thetaCut[i-1],
+            th2 = thetaCut[i],
+            x1 = xc + r*Math.cos(th1),
+            y1 = yc + r*Math.sin(th1),
+            x2 = xc + r*Math.cos(th2),
+            y2 = yc + r*Math.sin(th2),
+            startInTab = this.isInTab(x1, y1),
+            endInTab = this.isInTab(x2, y2);
+
+        let midx = x1 + (x2-x1)/2,
+            midy = y1 + (y2-y1)/2;
+
+        if (startInTab) {
+            output += "G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight());
+            output += "//Start in tab\n" + output + this.arcCut(xc-x1, yc-y1, x2, y2, clockwise, false);
+        } 
+        
+        else if (endInTab) {
+            output += "G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight());
+            output += "//End in tab\n" + output + this.arcCut(xc-x1, yc-y1, x2, y2, clockwise, false);
+        } 
+        
+        // if both points are exactly on tab, chord (and every point on it) will be in tab)
+        else if (this.isInTab(midx, midy)) {
+            output += "G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight());
+            output += "//Completely in tab\n" + output + this.arcCut(xc-x1, yc-y1, x2, y2, clockwise, false);
+        }
+
+        // if this part runs, the arc is completely outside the tab 
+        else {
+            output += this.getFreeArcRecursive(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabs));
+        }
+    };
+    return output;
 };
 
-TurtleShepherd.prototype.arcCut = function(xc, yc, x2, y2, Clockwise) {
+TurtleShepherd.prototype.arcCut = function(xc0, yc0, x2, y2, Clockwise, endDepth) {
     // clockwise is default
     let clockwise = Clockwise;
     if (clockwise === undefined) {
@@ -890,10 +965,10 @@ TurtleShepherd.prototype.arcCut = function(xc, yc, x2, y2, Clockwise) {
     };
     
     if (clockwise) {
-        return "G2 X" + x2 + " Y" + y2 + " I" + xc + " J" + yc + "\n";
+        return "G2 X" + x2 + " Y" + y2 + " I" + xc0 + " J" + yc0 + "\n";
     }
     
-    return "G3 X" + x2 + " Y" + y2 + " I" + xc + " J" + yc + "\n";
+    return "G3 X" + x2 + " Y" + y2 + " I" + xc0 + " J" + yc0 + "\n";
 };
 
 TurtleShepherd.prototype.toGcode = function() {    
@@ -956,6 +1031,36 @@ TurtleShepherd.prototype.toGcode = function() {
                 gcodeStr += "G0 X" + (this.cache[i].x2) + " Y" + (this.cache[i].y2) + "\n";
             }
         } 
+
+        else if (this.cache[i].cmd == "arc") {
+            let xc = this.cache[i].xc,
+                yc = this.cache[i].yc,
+                r = this.cache[i].r,
+                theta1 = this.cache[i].theta1,
+                theta2 = this.cache[i].theta2,
+                clockwise = this.cache[i].clockwise,
+                cutDepth = this.cache[i].cutdepth,
+                depthChange = this.cache[i].depthchange,
+                theta1Rad = (Math.PI / 180) * theta1,
+                theta2Rad = (Math.PI / 180) * theta2,
+                x1 = xc + r*Math.cos(theta1Rad),
+                y1 = yc + r*Math.sin(theta1Rad),
+                x2 = xc + r*Math.cos(theta2Rad),
+                y2 = yc + r*Math.sin(theta2Rad),
+                endDepth = depthChange ? (cutDepth + depthChange) : false;
+            
+            if (this.cache[i].pendown) {
+
+                if ( (cutDepth > tabDepth) || (cutDepth + depthChange > tabDepth) ) {
+                    gcodeStr += this.getFreeArc(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange);
+                } else {
+                    gcodeStr += this.arcCut((xc-x1), (yc-y1), x2, y2, clockwise, endDepth);
+                }
+            }
+            else {
+                gcodeStr += this.arcCut(xc-x1, yc-y1, x2, y2, clockwise, endDepth);
+            }
+        }
         
         else if (this.cache[i].cmd == "cutdepth") {
             if (this.drillIntoTab(this.cache[i].x, this.cache[i].y, this.cache[i].cutdepth)) {
@@ -1006,6 +1111,57 @@ TurtleShepherd.prototype.rotateOrigin = function(x, y, angle) {
     return [nx, ny];
 }
 
+TurtleShepherd.prototype.rotatePoint = function(Point, center, angle) {
+    let radians = (Math.PI / 180) * angle,
+        x = Point[0], y = Point[1],
+        cx = center[0], cy = center[1],
+        cos = Math.cos(radians),
+        sin = Math.sin(radians),
+        rx = (cos * (x-cx)) + (sin * (y-cy)),
+        ry = (cos * (y-cy)) - (sin * (x-xc));
+    return [cx+rx, cy+ry];
+}
+
+TurtleShepherd.prototype.plus = function(Point1, Point2) {
+    let x0 = Point1[0], y0 = Point1[1],
+        x1 = Point2[0], y1 = Point2[1],
+        diff = [x1+x0, y1+y0];
+    return diff;
+}
+
+TurtleShepherd.prototype.minus = function(Point1, Point2) {
+    let x0 = Point1[0], y0 = Point1[1],
+        x1 = Point2[0], y1 = Point2[1],
+        diff = [x1-x0, y1-y0];
+    return diff;
+}
+
+TurtleShepherd.prototype.dot = function(Point) {
+    let x0 = Point1[0], y0 = Point1[1],
+        x1 = Point2[0], y1 = Point2[1],
+        d = x0*x1 + y0*y1;
+    return d;
+}
+
+TurtleShepherd.prototype.norm = function(Point) {
+    let x0 = Point[0],
+        y0 = Point[1],
+        d = Math.sqrt(x0*x0 + y0*y0);
+    return d;
+}
+
+TurtleShepherd.prototype.scale = function(Point, s) {
+    let x0 = Point[0],
+        y0 = Point[1];
+    return [s*x0, s*y0];
+}
+
+TurtleShepherd.prototype.sign = function(a) {
+    if (a < 0) {return -1};
+    if (a > 0) {return 1};
+    return 0;
+}
+
 TurtleShepherd.prototype.translate = function(Point, x, y) {
     let x0 = Point[0],
         y0 = Point[1],
@@ -1016,6 +1172,13 @@ TurtleShepherd.prototype.translate = function(Point, x, y) {
 
 TurtleShepherd.prototype.calcAngle = function(x1, y1, x2, y2) {
     return Math.atan2( (y2-y1), (x2-x1) )
+}
+
+TurtleShepherd.prototype.negative = function(array) {
+    for (let i = 0; i < array.length; i++) {
+        array[i] = -array[i];
+    }
+    return array;
 }
 
 TurtleShepherd.prototype.isInTab = function(x, y) {
