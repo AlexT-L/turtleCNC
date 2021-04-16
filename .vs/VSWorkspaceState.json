@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\cnccode"
+    "\\cnccode",
+    "\\src"
   ],
-  "SelectedNode": "\\cnccode\\objects.js",
+  "SelectedNode": "\\cnccode\\fonts",
   "PreviewInSolutionExplorer": false
 }
