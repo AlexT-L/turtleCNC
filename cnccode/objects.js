@@ -723,6 +723,7 @@ SpriteMorph.prototype.gotoXYBy = function (x, y, stepsize) {
   this.isRunning = runState;
 };*/
 
+
 SpriteMorph.prototype.gotoXYIn = function (x, y, steps) {
     var stage = this.parentThatIsA(StageMorph);
     var dest;
