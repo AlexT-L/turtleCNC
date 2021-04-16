@@ -37,12 +37,10 @@ SpriteMorph.prototype.init = function(globals) {
     this.isDown = true;
     this.cache = new Cache;
     this.color = StageMorph.prototype.defaultPenColor;
-    this.stitchtype = 0;
-    //this.isRunning = false;
     this.stitchoptions = {};
 };
 
-SpriteMorph.prototype.addStitch = function(x1, y1, x2, y2, angle=false ) {
+SpriteMorph.prototype.addCutLine = function(x1, y1, x2, y2, angle=false ) {
   var stage = this.parentThatIsA(StageMorph);
 
   if (this.cutLines === null) {
@@ -53,12 +51,6 @@ SpriteMorph.prototype.addStitch = function(x1, y1, x2, y2, angle=false ) {
     Math.round(this.color.g) + "," +
     Math.round(this.color.b)  + ")" );
   opacity = this.color.a;
-
-  /*
-  if (stage.isXRay) {
-    color = new THREE.Color("rgb(255,255,255)");
-    opacity = 0.25;
-  }*/
 
 	var material = this.cache.findMaterial(color,opacity);
 	if (!material) {
@@ -189,7 +181,7 @@ SpriteMorph.prototype.addJumpLine = function(x1, y1, x2, y2) {
 				resolution: new THREE.Vector2( stage.width(), stage.height() ),
 				sizeAttenuation: true,
 				lineWidth: .003,
-				dashArray: 0.06,
+				dashArray: 0.06,    
 				dashOffset: 0,
 				dashRatio: 0.35
 		});
@@ -202,220 +194,20 @@ SpriteMorph.prototype.addJumpLine = function(x1, y1, x2, y2) {
     this.reRender();
 };
 
-SpriteMorph.prototype.addStitchPoint = function(x2, y2) {
-    var stage = this.parentThatIsA(StageMorph);
-
-	color = new THREE.Color("rgb(0,0,255)");
-	var material = this.cache.findMaterial( color, 1);
-    if (!material) {
-		material = new THREE.MeshBasicMaterial(
-			{ color: color, side:THREE.DoubleSide, opacity: 1  } );
-		material.transparent = true;
-		this.cache.addMaterial(material);
-	}
-
-    if (this.myStitchPoints === null) {
-        this.myStitchPoints = new THREE.Group();
-    }
-
-    //normal = new THREE.Vector3( -(y2-y1), (x2-x1), 0);
-    //normal = normal.normalize();
-
-	var d = 2;
-	var geometry = this.cache.findGeometry('plane', [d, d]);
-	if (!geometry) {
-		geometry = new THREE.PlaneGeometry( d, d, 1, 1);
-		this.cache.addGeometry('plane', geometry, [d, d]);
-		geometry.faces.push(new THREE.Face3(0, 1, 2));
-		geometry.faces.push(new THREE.Face3(0, 2, 3));
-	}
-
-    line = new THREE.Mesh(geometry, material);
-    line.rotation.z = (45 - this.heading) * Math.PI / 180;
-    line.position.set(x2,y2,0.01);
-    line.visible = !StageMorph.prototype.hideStitches;
-    //if (stage.penSize <= 1)
-	stage.myStitchPoints.add(line);
-    this.reRender();
-
-};
-/*
-SpriteMorph.prototype.addDensityPoint = function(x1, y1) {
-    var stage = this.parentThatIsA(StageMorph);
-
-	var geometry = this.cache.findGeometry('densityPoint', [3, 6,]);
-	if (!geometry) {
-		geometry = new THREE.CircleGeometry( 3, 6 );
-		geometry.vertices.shift();
-		this.cache.addGeometry('densityPoint', geometry, [3, 6,]);
-	}
-
-	var material = this.cache.findMaterial( 0xff0000, 1);
-	if (!material) {
-		material = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:1} );
-		this.cache.addMaterial(material);
-	}
-
-    var circle = new THREE.Mesh( geometry, material );
-    circle.translateX(x1);
-    circle.translateY(y1);
-    circle.translateZ(0.03);
-    circle.visible = !StageMorph.prototype.ignoreWarnings;
-    stage.myDensityPoints.add(circle);
-    this.reRender();
-};*/
-
 // STITCH settings
 
 SpriteMorph.prototype.stopRunning = function () {
-	this.stitchtype = 0;
-  this.isRunning = false;
-	this.stitchoptions = {};
+    this.isRunning = false;
 }
 
 SpriteMorph.prototype.runningStitch = function (length, autoadjust=true) {
-	if (length > 0) {
-		this.isRunning = true;
-		this.stitchoptions = {
-      length: length,
-      autoadjust: autoadjust,
-    }
-    this.stitchtype = 0;
-	} else {
-		this.stitchtype = 0;
-		this.stitchoptions = {};
-	}
+	
 }
 
 SpriteMorph.prototype.beanStitch = function (length, autoadjust=true) {
-	if (length > 0) {
-    this.stitchtype = "bean";
-		this.isRunning = true;
-		this.stitchoptions = {
-      length: length,
-      autoadjust: autoadjust
-    }
-	} else {
-		this.stitchtype = 0;
-		this.stitchoptions = {};
-	}
-}
-/*
-SpriteMorph.prototype.crossStitch = function (length, width=10, center=true, autoadjust=true) {
-	if (length > 0 && width > 0) {
-    this.stitchtype = "cross";
-		this.isRunning = true;
-		this.stitchoptions = {
-      length: length,
-      autoadjust: autoadjust,
-      width: width,
-      center: center,
-    }
-
-	}
+	
 }
 
-SpriteMorph.prototype.zigzagStitch = function (density, width=10, center=true, autoadjust=true) {
-	if (density > 0 && width > 0) {
-    this.stitchtype = "zigzag";
-		this.isRunning = true;
-		this.stitchoptions = {
-      center: center,
-      autoadjust: autoadjust,
-      width: width,
-      length: density,
-    }
-	}
-}
-
-SpriteMorph.prototype.ZStitch = function (density, width=10, center=true, autoadjust=true) {
-	if (density > 0 && width > 0) {
-    this.stitchtype = "Z";
-		this.isRunning = true;
-		this.stitchoptions = {
-      center: center,
-      autoadjust: autoadjust,
-      width: width,
-      length: density,
-    }
-	}
-}
-
-
-SpriteMorph.prototype.satinStitch = function (width=10, center=true, autoadjust=true) {
-	if (width > 0) {
-    this.stitchtype = "zigzag";
-		this.isRunning = true;
-		this.stitchoptions = {
-      autoadjust: true,
-      width: width,
-      length: 2,
-      center: center,
-    }
-	}
-}
-
-SpriteMorph.prototype.tatamiStitch = function (width=100, interval=30, center=false, offset=0) {
-	if (width > 0) {
-    this.stitchtype = "tatami";
-		this.isRunning = true;
-		this.stitchoptions = {
-      autoadjust: true,
-      width: width,
-      length: 4,
-      center: center,
-      interval:  Math.max(10,interval),
-      offset: Math.min(offset,interval),
-      segment_count: 0,
-    }
-	}
-}
-
-SpriteMorph.prototype.trimStitch = function (on = true) {
-  var myself = this;
-	var penState = myself.isDown;
-  var runState = myself.isRunning;
-  var stitchState = myself.stitchtype;
-  myself.stitchtype = 0;
-	myself.isDown = false;
-  myself.isRunning = false;
-	myself.forward(2);
-	myself.forward(-4);
-	myself.forward(2);
-  myself.stitchtype = stitchState;
-	myself.isDown = penState;
-  myself.isRunning = runState;
-}
-
-SpriteMorph.prototype.jumpStitch = function (on = true) {
-	var stage = this.parentThatIsA(StageMorph);
-	this.isDown = !on;
-	if (on) {
-		stage.turtle.material.color = new THREE.Color("rgb(255,0,0)");
-		stage.turtle.material.opacity = 0.3;
-	} else {
-		stage.turtle.material.color = new THREE.Color("rgb("+this.color.r + "," + this.color.g + "," + this.color.b + ")");
-		stage.turtle.material.opacity = 0.7;
-	}
-    this.reRender();
-}
-
-SpriteMorph.prototype.tieStitch = function () {
-  var myself = this;
-  var penState = myself.isDown;
-  var runState = myself.isRunning;
-  var stitchState = myself.stitchtype;
-  myself.stitchtype = 0;
-	myself.isDown = true;
-  myself.isRunning = false;
-	myself.forward(2);
-	myself.forward(-4);
-	myself.forward(2);
-  myself.stitchtype = stitchState;
-  myself.isDown = penState;
-  myself.isRunning = runState;
-}
-*/
 SpriteMorph.prototype.origForward = SpriteMorph.prototype.forward;
 SpriteMorph.prototype.forward = function (steps) {
     var dest,
@@ -459,231 +251,16 @@ SpriteMorph.prototype.arcCounterClockwise = function(r, dtheta) {
 
 
 SpriteMorph.prototype.forwardByNr = function (totalsteps, steps) {
-    stepsize = totalsteps / steps;
-
-    this.forwardSegemensWithEndCheck(steps, stepsize)
+   
 };
 
 SpriteMorph.prototype.forwardBy = function (totalsteps, stepsize) {
-    steps = Math.floor(totalsteps / stepsize);
-    rest = totalsteps - (steps * stepsize);
-    this.forwardSegemensWithEndCheck(steps, stepsize)
-
-  	if (rest > 0) {
-  		this.moveforward(rest);
-  	}
 
 };
 
 SpriteMorph.prototype.forwardSegemensWithEndCheck = function(steps, stepsize) {
-  for(i=0;i<steps;i++) {
-    if (this.stitchtype == "tatami" && i == 0 && this.stitchoptions.center)
-        this.tatamiForwardStart(stepsize, this.stitchoptions.width)
-
-    if (this.stitchtype == "cross" && i == 0 && this.stitchoptions.center)
-        this.crossStitchForwardStart(stepsize, this.stitchoptions.width)
-
-    if (this.stitchtype == "zigzag" && i == 0 && this.stitchoptions.center)
-      this.zigzagForwardStart(stepsize, this.stitchoptions.width)
-    else if (this.stitchtype == "Z" && i == 0 && this.stitchoptions.center)
-      this.ZForwardStart(stepsize, this.stitchoptions.width)
-    else
-      this.moveforward(stepsize);
-
-    if (this.stitchtype == "zigzag" && i == steps - 1 && this.stitchoptions.center)
-      this.zigzagForwardEnd(stepsize, this.stitchoptions.width)
-    if (this.stitchtype == "Z" && i == steps - 1 && this.stitchoptions.center)
-        this.ZForwardEnd(stepsize, this.stitchoptions.width)
-    if (this.stitchtype == "cross" && i == steps - 1 && this.stitchoptions.center)
-        this.crossStitchForwardStop(stepsize, this.stitchoptions.width)
-    if (this.stitchtype == "tatami" && i == steps - 1 && this.stitchoptions.center)
-        this.tatamiForwardEnd(stepsize, this.stitchoptions.width)
-  }
+  
 }
-
-
-/*
-SpriteMorph.prototype.beanStitchForward = function (steps) {
-    this.doMoveForward(steps);
-    this.doMoveForward(-steps);
-    this.doMoveForward(steps);
-}
-
-SpriteMorph.prototype.crossStitchForward = function (steps, width=10) {
-  var c = Math.sqrt(steps*steps + width * width);
-  var alpha = degrees(Math.asin(width/c));
-
-  this.turn(alpha);
-  this.doMoveForward(c);
-  this.turn(180 - alpha);
-  this.doMoveForward(steps);
-  this.turn(180 - alpha);
-  this.doMoveForward(c);
-  this.turn(alpha);
-}
-
-SpriteMorph.prototype.crossStitchForwardStart = function (steps, width=10) {
-  this.turn(-90);
-  this.doMoveForward(width/2);
-  this.turn(90);
-}
-
-SpriteMorph.prototype.crossStitchForwardStop = function (steps, width=10) {
-  this.turn(90);
-  this.doMoveForward(width/2);
-  this.turn(-90);
-}
-
-
-SpriteMorph.prototype.zigzagForward = function (steps, width=10) {
-  var c = Math.sqrt(steps/2*steps/2 + width * width);
-  var alpha = degrees(Math.asin(width/c));
-
-  this.turn(alpha);
-  this.doMoveForward(c);
-  this.turnLeft(2 *alpha);
-  this.doMoveForward(c);
-  this.turn(alpha);
-}
-
-
-SpriteMorph.prototype.zigzagForwardStart = function (steps, width=10) {
-  var c = Math.sqrt(steps/2*steps/2 + width * width);
-  var alpha = degrees(Math.asin(width/c));
-
-  this.turnLeft(alpha);
-  this.doMoveForward(c/2);
-  this.turn(alpha);
-}
-
-SpriteMorph.prototype.zigzagForwardEnd = function (steps, width=10) {
-  var c = Math.sqrt(steps/2*steps/2 + width * width);
-  var alpha = degrees(Math.asin(width/c));
-
-  this.turn(alpha);
-  this.doMoveForward(c);
-  this.turnLeft(2 *alpha);
-  this.doMoveForward(c/2);
-  this.turn(alpha);
-}
-
-SpriteMorph.prototype.ZForward = function (steps, width=10) {
-  var c = Math.sqrt(steps*steps + width * width);
-  var alpha = degrees(Math.asin(width/c));
-
-  this.turn(alpha);
-  this.doMoveForward(c);
-  this.turnLeft(90 + alpha);
-  this.doMoveForward(width);
-  this.turn(90);
-}
-
-SpriteMorph.prototype.ZForwardStart = function (steps, width=10) {
-  var c = Math.sqrt(steps*steps + width * width);
-  var alpha = degrees(Math.asin(width/c));
-
-  this.turn(alpha);
-  this.doMoveForward(c/2);
-  this.turnLeft(90 + alpha);
-  this.doMoveForward(width);
-  this.turn(90);
-}
-
-SpriteMorph.prototype.ZForwardEnd = function (steps, width=10) {
-  var c = Math.sqrt(steps*steps + width * width);
-  var alpha = degrees(Math.asin(width/c));
-
-  this.turn(alpha);
-  this.doMoveForward(c/2);
-  this.turnLeft(alpha);
-}
-
-SpriteMorph.prototype.tatamiForward = function (steps, width=100) {
-
-  // just for move to the next line in 2 bz 10
-
-  var offset = (
-        ( this.stitchoptions.segment_count *
-          (this.stitchoptions.offset + this.stitchoptions.interval)
-        ) % this.stitchoptions.interval
-      );
-
-  var c = Math.sqrt(steps/2*steps/2);
-  var alpha = degrees(Math.asin((steps/2)/c));
-
-  var distance = width - offset;
-  var interval = this.stitchoptions.interval;
-  var count = Math.floor(distance / interval);
-  var rest = distance - (count * interval);
-
-  this.turn(90 - alpha);
-  this.doMoveForward(c);
-  this.turn(alpha);
-
-  if (offset > 0)
-      this.doMoveForward(offset);
-
-  for(var i=0;i<count;i++) {
-    this.doMoveForward(interval);
-  }
-  if (rest) {
-    this.doMoveForward(rest);
-  }
-
-  this.stitchoptions.segment_count+=1;
-
-  var offset = (
-        ( this.stitchoptions.segment_count *
-          (this.stitchoptions.offset + this.stitchoptions.interval)
-        ) % this.stitchoptions.interval
-      );
-
-  c = Math.sqrt(steps/2*steps/2);
-  alpha = degrees(Math.asin((steps/2)/c));
-
-  distance = width - offset;
-  interval = this.stitchoptions.interval;
-  count = Math.floor(distance / interval);
-  rest = distance - (count * interval);
-
-
-  this.turnLeft(180 - alpha);
-  this.doMoveForward(c);
-  this.turnLeft(alpha);
-
-  if (offset > 0)
-      this.doMoveForward(offset);
-
-  for(var i=0;i<count;i++) {
-    this.doMoveForward(interval);
-  }
-  if (rest) {
-    this.doMoveForward(rest);
-  }
-  this.turn(90);
-
-  this.stitchoptions.segment_count+=1;
-
-}
-
-SpriteMorph.prototype.tatamiForwardStart = function (steps, width=10) {
-  var c = Math.sqrt(steps*steps + width * width);
-  var alpha = degrees(Math.asin(width/c));
-
-  this.turn(-90);
-  this.doMoveForward(width/2);
-  this.turn(90);
-}
-
-SpriteMorph.prototype.tatamiForwardEnd = function (steps, width=10) {
-  var c = Math.sqrt(steps*steps + width * width);
-  var alpha = degrees(Math.asin(width/c));
-
-  this.turn(90);
-  this.doMoveForward(c/2);
-  this.turn(-90);
-}
-*/
 
 SpriteMorph.prototype.setSize = function(size) {
     let stage = this.parentThatIsA(StageMorph);
@@ -1108,7 +685,7 @@ SpriteMorph.prototype.doMoveForward = function (steps) {
 		    this.isDown );
 
 	    if (this.isDown) {
-		    this.addStitch(oldx, oldy, this.xPosition(), this.yPosition(), this.heading);
+		    this.addCutLine(oldx, oldy, this.xPosition(), this.yPosition(), this.heading);
             this.addStopPoint();
 	    } else {
 		    this.addJumpLine(oldx, oldy, this.xPosition(), this.yPosition());
@@ -1193,13 +770,11 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe, noShadow) {
       }
 
 			if (this.isDown) {
-				this.addStitch(oldx, oldy, this.xPosition(), this.yPosition(), angle);
-				this.addStitchPoint(this.xPosition(), this.yPosition());
+				this.addCutLine(oldx, oldy, this.xPosition(), this.yPosition(), angle);
 				if (warn && !stage.turtleShepherd.ignoreWarning) {
 				}
 
 				if (this.parentThatIsA(StageMorph).turtleShepherd.isEmpty() || this.lastJumped)
-					this.addStitchPoint(oldx, oldy);
 				this.lastJumped = false;
 			} else {
 				this.addJumpLine(oldx, oldy, this.xPosition(), this.yPosition());
@@ -1212,18 +787,15 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe, noShadow) {
 	}
 };
 
-/*
+
 SpriteMorph.prototype.gotoXYBy = function (x, y, stepsize) {
   // this block is deprecated but keep it for compatibility
-  stitchState = this.stitchtype;
   stitchLength = this.stitchoptions.length;
   runState = this.isRunning;
   this.isRunning = true;
-  this.stitchtype = "";
   this.stitchoptions.length = stepsize;
   this.autoadjust = false;
   this.gotoXY(x,y);
-  this.stitchtype = stitchState;
   this.autoadjust = false;
   this.stitchoptions.length = stitchLength;
   this.isRunning = runState;
@@ -1261,7 +833,7 @@ SpriteMorph.prototype.gotoXYIn = function (x, y, steps) {
 		this.forwardSegemensWithEndCheck(steps,stepsize);
   }
 };
-*/
+
 
 SpriteMorph.prototype.pointTowards = function (x, y) {
     var stage = this.parentThatIsA(StageMorph);
@@ -1741,7 +1313,7 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'reset',
         category: 'control'
     };
-    /*
+    
     this.blocks.forwardBy =
     {
 		only: SpriteMorph,
@@ -1751,7 +1323,7 @@ SpriteMorph.prototype.initBlocks = function () {
         defaults: [100,10]
     };
     
-    /*
+    
     this.blocks.forwardByNr =
     {
 		only: SpriteMorph,
@@ -1775,7 +1347,7 @@ SpriteMorph.prototype.initBlocks = function () {
         category: 'motion',
         spec: 'go to x: %n y: %n in %n',
         defaults: [0, 0, 10]
-    }; */
+    }; 
     this.blocks.pointTowards =
     {
 		only: SpriteMorph,
@@ -2344,118 +1916,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(watcherToggle('direction'));
         blocks.push(block('direction'));
 
-    } else if (cat === 'looks') {
-
-        blocks.push(block('doSwitchToCostume'));
-        blocks.push(block('doWearNextCostume'));
-        blocks.push(watcherToggle('getCostumeIdx'));
-        blocks.push(block('getCostumeIdx'));
-        blocks.push('-');
-        blocks.push(block('doSayFor'));
-        blocks.push(block('bubble'));
-        blocks.push(block('doThinkFor'));
-        blocks.push(block('doThink'));
-        blocks.push('-');
-        blocks.push(block('changeEffect'));
-        blocks.push(block('setEffect'));
-        blocks.push(block('clearEffects'));
-        blocks.push('-');
-        blocks.push(block('changeScale'));
-        blocks.push(block('setScale'));
-        blocks.push(watcherToggle('getScale'));
-        blocks.push(block('getScale'));
-        blocks.push('-');
-        blocks.push(block('show'));
-        blocks.push(block('hide'));
-        blocks.push('-');
-        blocks.push(block('comeToFront'));
-        blocks.push(block('goBack'));
-
-    // for debugging: ///////////////
-
-        if (this.world().isDevMode) {
-            blocks.push('-');
-            txt = new TextMorph(localize(
-                'development mode \ndebugging primitives:'
-            ));
-            txt.fontSize = 9;
-            txt.setColor(this.paletteTextColor);
-            blocks.push(txt);
-            blocks.push('-');
-            blocks.push(block('reportCostumes'));
-            blocks.push('-');
-            blocks.push(block('log'));
-            blocks.push(block('alert'));
-            blocks.push('-');
-            blocks.push(block('doScreenshot'));
-        }
-
     /////////////////////////////////
-
-    } else if (cat === 'sound') {
-
-        blocks.push(block('playSound'));
-        blocks.push(block('doPlaySoundUntilDone'));
-        blocks.push(block('doStopAllSounds'));
-        blocks.push('-');
-        blocks.push(block('doRest'));
-        blocks.push('-');
-        blocks.push(block('doPlayNote'));
-        blocks.push('-');
-        blocks.push(block('doChangeTempo'));
-        blocks.push(block('doSetTempo'));
-        blocks.push(watcherToggle('getTempo'));
-        blocks.push(block('getTempo'));
-
-    // for debugging: ///////////////
-
-        if (this.world().isDevMode) {
-            blocks.push('-');
-            txt = new TextMorph(localize(
-                'development mode \ndebugging primitives:'
-            ));
-            txt.fontSize = 9;
-            txt.setColor(this.paletteTextColor);
-            blocks.push(txt);
-            blocks.push('-');
-            blocks.push(block('reportSounds'));
-        }
-
-    } else if (cat === 'pen') {
-
-        blocks.push(block('clear'));
-        blocks.push('-');
-        blocks.push(block('down'));
-        blocks.push(block('up'));
-        blocks.push(block('isPenDown'));
-        blocks.push('-');
-        blocks.push(block('setSize'));
-        blocks.push(block('changeSize'));
-        blocks.push(block('getPenSize'));
-        blocks.push('-');
-        blocks.push(block('setOpacity'));
-        blocks.push(block('changeOpacity'));
-        blocks.push(block('getOpacity'));
-
-	} else if (cat === 'embroidery') {
-
-        blocks.push(block('clear'));
-        blocks.push(block('stopRunning'));
-        blocks.push('-');
-        blocks.push(block('runningStitch'));
-        blocks.push(block('beanStitch'));
-        blocks.push(block('crossStitch'));
-        blocks.push('-');
-        blocks.push(block('zigzagStitch'));
-        blocks.push(block('ZStitch'));
-        blocks.push(block('satinStitch'));
-        blocks.push(block('tatamiStitch'));
-        blocks.push('-');
-        blocks.push('-');
-        blocks.push(block('jumpStitch'));
-        blocks.push(block('tieStitch'));
-        blocks.push(block('trimStitch'));
-        blocks.push('-');
 
     } else if (cat === 'other') {
         blocks.push(block('zoomToFit'));
@@ -2480,22 +1941,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('addTabHere'));
         blocks.push(block('addTabLocation'));
-
-	} else if (cat === 'colors') {
-        blocks.push(block('setColor'));
-        blocks.push('-');
-        blocks.push(block('setColorRGB'));
-        blocks.push(block('setColorHSV'));
-        blocks.push(block('setColorHex'));
-        blocks.push(block('getColorRGB'));
-        blocks.push(block('getColorHSV'));
-        blocks.push(block('getColorHex'));
-        blocks.push('-');
-        blocks.push(block('pickHue'));
-        blocks.push(block('setHSB'));
-        blocks.push(block('changeHSB'));
-		    blocks.push(block('getHSB'));
-        blocks.push('-');
 
     } else if (cat === 'control') {
 
@@ -2526,12 +1971,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doReport'));
         blocks.push('-');
-    /*
-    // old STOP variants, migrated to a newer version, now redundant
-        blocks.push(block('doStopBlock'));
-        blocks.push(block('doStop'));
-        blocks.push(block('doStopAll'));
-    */
+
         blocks.push(block('doStopThis'));
         blocks.push(block('doStopOthers'));
         blocks.push('-');
@@ -2539,13 +1979,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('fork'));
         blocks.push(block('evaluate'));
         blocks.push('-');
-    /*
-    // list variants commented out for now (redundant)
-        blocks.push(block('doRunWithInputList'));
-        blocks.push(block('forkWithInputList'));
-        blocks.push(block('evaluateWithInputList'));
-        blocks.push('-');
-    */
+    
         blocks.push(block('doCallCC'));
         blocks.push(block('reportCallCC'));
         blocks.push('-');
@@ -2886,7 +2320,6 @@ StageMorph.prototype.init = function (globals) {
     this.initCamera();
     this.fonts = null;
     this.stepcounter = 0;
-    this.isXRay = false;
 
 	// load customized fonts based on Hershey's fonts.
 
@@ -2910,7 +2343,6 @@ StageMorph.prototype.init = function (globals) {
 
     this.scene.grid.draw();
     this.myObjects = new THREE.Object3D();
-    this.myStitchPoints = new THREE.Object3D();
     this.myTabs = new THREE.Object3D();
     this.myStopPoints = new THREE.Object3D();
     this.myCutLines = new THREE.Object3D();
@@ -2918,7 +2350,6 @@ StageMorph.prototype.init = function (globals) {
     this.myJumpLines = new THREE.Object3D();
     this.myJumpArcs = new THREE.Object3D();
     this.scene.add(this.myObjects);
-    this.scene.add(this.myStitchPoints);
     this.scene.add(this.myTabs);
     this.scene.add(this.myStopPoints);
     this.scene.add(this.myCutLines);
@@ -3027,9 +2458,6 @@ StageMorph.prototype.clearAll = function () {
     /*for (var i = this.myObjects.children.length - 1; i >= 0; i--) {
         this.myObjects.remove(this.myObjects.children[i]);
     }*/
-    for (i = this.myStitchPoints.children.length - 1; i >= 0; i--) {
-        this.myStitchPoints.remove(this.myStitchPoints.children[i]);
-    }
     for (i = this.myCutLines.children.length - 1; i >= 0; i--) {
         this.myCutLines.remove(this.myCutLines.children[i]);
     }
@@ -3094,14 +2522,6 @@ StageMorph.prototype.initRenderer = function () {
         StageMorph.prototype.hideJumps = !StageMorph.prototype.hideJumps;
         myself.myJumpLines.children.forEach(function (eachObject) {
             eachObject.visible = !StageMorph.prototype.hideJumps
-        });
-        myself.reRender();
-    };
-
-    this.renderer.toggleStitchPoints = function () {
-        StageMorph.prototype.hideStitches = !StageMorph.prototype.hideStitches;
-        myself.myStitchPoints.children.forEach(function (eachObject) {
-            eachObject.visible = !StageMorph.prototype.hideStitches;
         });
         myself.reRender();
     };
@@ -3413,86 +2833,6 @@ StageMorph.prototype.reportMouseY = function () {
     }
     return 0;
 };
-/*
-StageMorph.prototype.turnXRayOn = function () {
-  this.isXRay = true;
-  for (i = this.myCutLines.children.length - 1; i >= 0; i--) {
-      this.myCutLines.remove(this.myCutLines.children[i]);
-  }
-  stitches = this.turtleShepherd.getStitchesAsArr();
-  this.renderer.setClearColor(new THREE.Color("rgb(0,0,0)"),1);
-
-  if (!StageMorph.prototype.hideGrid)
-    this.scene.grid.toggle();
-  if (!StageMorph.prototype.hideStitches)
-    this.renderer.toggleStitchPoints();
-  if (!StageMorph.prototype.hideJumps)
-    this.renderer.toggleJumpLines();
-    if (!StageMorph.prototype.hideTurtle)
-      this.renderer.toggleTurtle();
-
-  for (i =0; i < stitches.length; i++) {
-    stitch = stitches[i];
-    var deltaX = stitch[1][0] - stitch[0][0];
-    var deltaY = stitch[1][1] - stitch[0][1];
-    var angle = Math.abs(deltaX) < 0.000 ? (deltaY < 0 ? 90 : 270)
-          : Math.round( (deltaX >= 0 ? 0 : 180)  - (Math.atan(deltaY / deltaX) * 57.2957795131),8
-        ) + 90;
-    //if (angle == 270 ) angle = 0;
-
-    this.children[0].addStitch(stitch[0][0], stitch[0][1], stitch[1][0], stitch[1][1], angle)
-  }
-  this.renderer.changed = true;
-
-}
-
-StageMorph.prototype.turnXRayOff = function () {
-  this.isXRay = false;
-  for (i = this.myCutLines.children.length - 1; i >= 0; i--) {
-      this.myCutLines.remove(this.myCutLines.children[i]);
-  }
-
-  stitches = this.turtleShepherd.getStitchesAsArr();
-
-  this.renderer.setClearColor(
-      new THREE.Color(
-          "rgb("+
-          StageMorph.prototype.backgroundColor.r + "," +
-          StageMorph.prototype.backgroundColor.g + "," +
-          StageMorph.prototype.backgroundColor.b + ")"),
-          1
-  );
-
-  for (i =0; i < stitches.length; i++) {
-    stitch = stitches[i];
-    this.children[0].color = stitch[2];
-    var deltaX = stitch[1][0] - stitch[0][0];
-    var deltaY = stitch[1][1] - stitch[0][1];
-
-    var angle = Math.abs(deltaX) < 0.000 ? (deltaY < 0 ? 90 : 270)
-          : Math.round( (deltaX >= 0 ? 0 : 180)  - (Math.atan(deltaY / deltaX) * 57.2957795131),8
-        ) + 90;
-    this.children[0].addStitch(stitch[0][0], stitch[0][1], stitch[1][0], stitch[1][1], angle)
-  }
-
-  ide = this.parentThatIsA(IDE_Morph);
-
-  if (ide.hideGrid != StageMorph.prototype.hideGrid)
-    this.scene.grid.toggle();
-  if (ide.hideStitches != StageMorph.prototype.hideStitches)
-    this.renderer.toggleStitchPoints();
-  if (ide.hidejumps != StageMorph.prototype.hideJumps)
-    this.renderer.toggleJumpLines();
-  if (ide.hideTurtle != StageMorph.prototype.hideTurtle)
-    this.renderer.toggleTurtle();
-
-  this.renderer.changed = true;
-}
-*/
-
-StageMorph.prototype.getIsXRay = function () {
-  return this.isXRay;
-}
 
 StageMorph.prototype.clearPenTrails = nop;
 
@@ -3615,7 +2955,7 @@ function Cache () {
 
 Cache.prototype.init = function () {
     this.materials = [];
-    this.geometries = { stitch: [], circle: [], stitchPoint: [], jumpArc: [], arc: [], plane: [], meshline: [] };
+    this.geometries = { stitch: [], circle: [], jumpArc: [], arc: [], plane: [], meshline: [] };
 };
 
 Cache.prototype.clear = function () {

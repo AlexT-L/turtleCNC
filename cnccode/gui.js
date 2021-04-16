@@ -15,12 +15,13 @@ IDE_Morph.prototype.originalInit = IDE_Morph.prototype.init;
 IDE_Morph.prototype.init = function(isAutoFill) {
     this.originalInit();
     this.padding = 1;
-	/*
+	/*!!!
 	 this.droppedText(
-		this.getURL(this.resourceURL('cnccode/embroidery-library.xml')),
-		'Embroidery tools'
+		this.getURL(this.resourceURL('cnccode/cnc-library.xml')),
+		'CNC tools'
 	);
 	*/
+    //this.openBlocksString('cnccode/cnc-library.xml', 'tools', true);
 	//this.isAnimating = false;
     this.paletteWidth = 250; // initially same as logo width
     //MorphicPreferences.globalFontFamily = 'Sans, Helvetica, Arial';
@@ -155,7 +156,6 @@ IDE_Morph.prototype.applySavedTurtleStitchSettings = function () {
   hidegrid = this.getSetting('hidegrid');
   hidejumps = this.getSetting('hidejumps');
   hideturtle = this.getSetting('hideturtle');
-  hidestitches = this.getSetting('hidestitches');
   warnings = this.getSetting('ignoreWarning');
   isImperial = this.getSetting('isImperial');
   backgroundColor = this.getSetting('backgroundColor')
@@ -183,13 +183,6 @@ IDE_Morph.prototype.applySavedTurtleStitchSettings = function () {
     //StageMorph.prototype.hideTurtle = true;
   } else {
     StageMorph.prototype.hideTurtle = false;
-  }
-
-  if(hidestitches) {
-    this.stage.renderer.toggleStitchPoints()
-    //StageMorph.prototype.hideStitches = true;
-  } else {
-    StageMorph.prototype.hideStitches = false;
   }
 
   if(warnings) {
@@ -304,7 +297,6 @@ IDE_Morph.prototype.newProject = function () {
     StageMorph.prototype.hideGrid = false;
     StageMorph.prototype.hideJumps = false;
     StageMorph.prototype.hideTurtle = false;
-    StageMorph.prototype.hidestitches = false;
     StageMorph.prototype.ignoreWarnings = false;
 
     StageMorph.prototype.backgroundColor = new Color(255,255,255);
@@ -867,9 +859,9 @@ IDE_Morph.prototype.turtlestitchMenu = function () {
         'check to hide grid',
     );
 
-    /*
+    
     addPreference(
-        'Hide jump stitches',
+        'Hide non-cutting paths',
         function () {
             this.stage.renderer.toggleJumpLines();
             if (StageMorph.prototype.hideJumps) {
@@ -879,9 +871,10 @@ IDE_Morph.prototype.turtlestitchMenu = function () {
             }
         },
         StageMorph.prototype.hideJumps ,
-        'uncheck to show jump stitches',
-        'check to hide jump stitches'
+        'uncheck to show non-cutting paths',
+        'check to hide non-cutting paths'
     );
+    /*
     addPreference(
         'Hide stitch points',
         function () {
@@ -1297,39 +1290,6 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     elements.push(resetCameraButton);
     resetCameraButton.columns = 4;
     resetCameraButton.newColumn = 2;
-
-    /*
-    var XRayButton = new ToggleMorph(
-          'checkbox',
-          null,
-          function () {
-            if (stage.isXRay) {
-              myself.showMessage("turn off X-RAY ...");
-              window.setTimeout(
-                function() {
-                  stage.turnXRayOff();
-                  myself.showMessage("ok.",0.4);
-                  myself.XRayButton.refresh();
-                }, 250);
-            } else {
-              myself.showMessage("rendering X-RAY ...");
-              window.setTimeout(
-                function() {
-                  stage.turnXRayOn();
-                  myself.showMessage("ok.", 0.4);
-                  myself.XRayButton.refresh();
-                } ,250);
-            }
-          },
-          'X-Ray',
-          function () {
-            return stage.getIsXRay();
-          });
-    elements.push(XRayButton);
-    myself.XRayButton = XRayButton;
-    XRayButton.columns = 4;
-    XRayButton.newColumn = 3;
-    */
 
 	var toggleTurboButton = new ToggleMorph(
             'checkbox',
