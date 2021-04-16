@@ -29,6 +29,22 @@ materials.displayNames = {
     'Hardwood' : ['hardwood']
 };
 
+materials.chipLoad = {
+    'aluminium' : [0, ((0.13-0.08)/2), ((0.13-0.08)/2), ((0.20-0.15)/2), ((0.26-0.20)/2), ((0.26-0.20)/2)], // done
+    'acrylic' : [0, ((0.15-0.08)/2), ((0.26-0.18)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)], // done
+    'solid' : [0, ((0.10-0.05)/2), ((0.23-0.15)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.31-0.26)/2)], // done
+    'softplastic' : [0, ((0.15-0.08)/2), ((0.26-0.18)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)], // done
+    'hardplastic' : [0, ((0.10-0.05)/2), ((0.23-0.15)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.31-0.26)/2)], // done
+    'phenolic' : [0, ((0.13-0.10)/2), ((0.31-0.28)/2), ((0.46-0.43)/2), ((0.66-0.61)/2), ((0.66-0.61)/2)], // done
+    'Laminate' : [0, ((0.13-0.08)/2), ((0.28-0.23)/2), ((0.46-0.41)/2), ((0.54-0.48)/2), ((0.54-0.48)/2)], // done
+    'mdf' : [0, ((0.18-0.10)/2), ((0.41-0.33)/2), ((0.59-0.51)/2), ((0.69-0.64)/2), ((0.69-0.64)/2)], // done
+    'softwood' : [0, ((0.15-0.10)/2), ((0.33-0.28)/2), ((0.51-0.43)/2), ((0.59-0.54)/2), ((0.59-0.54)/2)], //done
+    'hardwood' : [0, ((0.13-0.08)/2), ((0.28-0.23)/2), ((0.46-0.41)/2), ((0.54-0.48)/2), ((0.54-0.48)/2)], // done
+    'steel' : [0, ((0.13-0.08)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)], // done
+    'composites' : [0, ((0.13-0.08)/2), ((0.31-0.23)/2), ((0.46-0.41)/2), ((0.64-0.59)/2), ((0.64-0.59)/2)], // done
+    'diameters' : [0, 3, 6, 10, 13, 1000],
+};
+
 // Machines library
 machines = {
     displayNames: {
@@ -130,9 +146,7 @@ TurtleShepherd.prototype.clear = function() {
     this.tool = false;
     
     // cut depth
-    this.cutDepth = this.defaultCutDepth;
-    this.newCutDepth = false;
-     
+    this.cutDepth = this.defaultCutDepth;     
 
     // Tabs
     this.tabs = [];
@@ -165,6 +179,31 @@ TurtleShepherd.prototype.getMaterials = function() {
 TurtleShepherd.prototype.loadMachines = function() {
     machines = {};
     return machines;
+}
+
+TurtleShepherd.prototype.getChipLoad = function() {
+    if (this.tool && this.workpiece) {
+        let mat = this.workpiece.material,
+            diams = this.materials.chipLoad['diameter'],
+            loads = this.materials.chipLoad[mat];
+
+        for (let i = 1; i < diams.length; i++) {
+            let d1 = diams[i-1], d2 = diams[i],
+                l1 = loads[i-1], l2 = loads[i],
+                s = this.tool.size;
+
+            if ( s > d1 && s < d2 ) {
+                let ds = (s-d1)/(d2-d1),
+                    dl = l1 + ds*(l2-l1);
+
+                return dl;
+            }
+        }
+        
+        throw new Error("Tool diameter must be between 0 and 10cm");
+    }
+    
+    throw new Error("Must set tool and material");
 }
 
 // Need to actually make a function of material/drillbit !!!!
@@ -389,7 +428,7 @@ TurtleShepherd.prototype.arcTo = function(x1, y1, r, theta1, theta2, clockwise, 
     // CNC command
     let radians = (Math.PI / 180) * theta1,
         xc = x1 - r*Math.cos(radians),
-        yc = y1 - r*Math.cos(radians);
+        yc = y1 - r*Math.sin(radians);
 
     this.cache.push(
         {
@@ -578,11 +617,12 @@ TurtleShepherd.prototype.setMachine = function(makeNew, machine, x, y, z) {
 TurtleShepherd.prototype.addTab = function(x, y, l, w, angle) {
     
     // Create rectangle at origin rotated by angle, and translate to (x,y)
-    let buffer = this.getToolSize()/2; // offset
-        v1 = this.translate(this.rotateOrigin(-(l/2+buffer), -(w/2+buffer), angle), x, y),
-        v2 = this.translate(this.rotateOrigin(  l/2+buffer , -(w/2+buffer), angle), x, y),
-        v3 = this.translate(this.rotateOrigin(  l/2+buffer ,   w/2+buffer , angle), x, y),
-        v4 = this.translate(this.rotateOrigin(-(l/2+buffer),   w/2+buffer , angle), x, y),
+    let radians = (Math.PI / 180) * angle,
+        buffer = this.getToolSize()/2; // offset
+        v1 = this.translate(this.rotateOrigin(-(l/2+buffer), -(w/2+buffer), radians), x, y),
+        v2 = this.translate(this.rotateOrigin(  l/2+buffer , -(w/2+buffer), radians), x, y),
+        v3 = this.translate(this.rotateOrigin(  l/2+buffer ,   w/2+buffer , radians), x, y),
+        v4 = this.translate(this.rotateOrigin(-(l/2+buffer),   w/2+buffer , radians), x, y),
         tab = [];
 
     // Turn vertices into array of sides in vector form
@@ -700,17 +740,17 @@ TurtleShepherd.prototype.getFreePathRecursive = function(x1, y1, x2, y2, cutDept
     if (depthChange === undefined) {depthChange = 0};
 
     if (!tabsToCheck.length) { // No tabs, we're fine
-        return "//No tabs \n" + this.lineCut(x2, y2, depthChange);
+        return this.lineCut(x2, y2, depthChange);
     };
     
     let int = [], // array of intersections
         x00 = x1, x01 = x2-x1, y00 = y1, y01 = y2-y1; // Cut to be made, parametrized
 
     // pop off another tab and check it
-    let tab = tabsToCheck.pop().pop();
+    var tab = tabsToCheck.pop().pop();
 
-    while (tab.length) {
-        let edge = tab.pop(),
+    for (let i = 0; i < tab.length; i++) {
+        let edge = tab[i],
             x10 = edge[0][0],
             x11 = edge[1][0],
             y10 = edge[0][1],
@@ -733,10 +773,10 @@ TurtleShepherd.prototype.getFreePathRecursive = function(x1, y1, x2, y2, cutDept
     // No intersections means are either entirely inside or outside tab
     // if we are in tab, don't make cut (still allows vertical drill into tab)
     if (int.length == 0) {
-        if (this.isInTab(x1, y1) || this.isInTab(x2, y2)) {
-            return "//Completely inside tab " + "G1 X" + x2 + " Y" + y2 + "\n";
+        if (this.isInTab(x1, y1, tab) && this.isInTab(x2, y2, tab)) {
+            return "G1 X" + x2 + " Y" + y2 + "\n";
         };
-        return "//No intersections on x:" + x1+"-"+x2+" y:"+y1+"-"+y2 + this.getFreePathRecursive(x1, y1, x2, y2, cutDepth, depthChange, tol, tabsToCheck);
+        return this.getFreePathRecursive(x1, y1, x2, y2, cutDepth, depthChange, tol, this.copyTabs(tabsToCheck));
     };
     
     // One intersection means we start or end in tab
@@ -745,25 +785,31 @@ TurtleShepherd.prototype.getFreePathRecursive = function(x1, y1, x2, y2, cutDept
             xInt = x1 + x01*s, 
             yInt = y1 + y01*s;
 
-        // Corner case, one endpoint on edge of tab 
-        if ( (!this.isInTab(x1, y1)) && (!this.isInTab(x2, y2)) ) {
-            return "G1 Z" + cutDepth + this.lineCut(x2, y2);
-        }
+        // start on tab 
+        if (this.isOnTab(x1, y1, tab)) {
+            let output = ("G1 Z" + (cutDepth + depthChange*s) + "\n"); // Put spindle down to continue cut
+            return  output + this.getFreePathRecursive(x1, y1, x2, y2, cutDepth, depthChange*(1-s), tol, this.copyTabs(tabsToCheck)); // Check next segment
+        };
+
+        // end on tab
+        if (this.isOnTab(x2, y2, tab)) {
+            let output = this.getFreePathRecursive(x1, y1, x2, y2, cutDepth, depthChange*s, tol, this.copyTabs(tabsToCheck));
+            return "" + output + ("G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + "\n");
+        };
 
         // start (strictly) in tab
-        if (this.isInTab(x1, y1)) {
-            let output = "G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + this.lineCut(xInt, yInt); // Get out of tab
+        if (this.isInTab(x1, y1, tab)) {
+            let output = "G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + "\n" + this.lineCut(xInt, yInt); // Get out of tab
             output += ("G1 Z" + (cutDepth + depthChange*s) + "\n"); // Put spindle down to continue cut
-            return  "//Begin Start in tab\n" + output + this.getFreePathRecursive(xInt, yInt, x2, y2, cutDepth, depthChange*(1-s), tol, tabsToCheck) + "//End Start in tab\n"; // Check next segment
+            return  output + this.getFreePathRecursive(xInt, yInt, x2, y2, cutDepth, depthChange*(1-s), tol, this.copyTabs(tabsToCheck)); // Check next segment
         };
         
-        // end in tab - find free path to tab
-        let newTab = this.copyTabs(tabsToCheck);
-        let output = "" + this.getFreePathRecursive(x1, y1, xInt, yInt, cutDepth, depthChange*s, tol, this.copyTabs(tabsToCheck));
-        return "Begin End in tab\n" + output + ("G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + "\n") + this.lineCut(x2, y2) + "//End end in tab\n";
+        // end (strictly) in tab - find free path to tab
+        let output = this.getFreePathRecursive(x1, y1, xInt, yInt, cutDepth, depthChange*s, tol, this.copyTabs(tabsToCheck));
+        return "" + output + ("G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + "\n") + this.lineCut(x2, y2);
     };
     
-    // More than two intersections means we start and end outside of tab
+    // More than one intersection means we start and end outside of tab
     if (int.length > 1) {
         // Only really 1-2 intersections (we can get more than 2 if we cross a corner)
         let minS = Math.min.apply(Math, int), 
@@ -786,7 +832,7 @@ TurtleShepherd.prototype.getFreePathRecursive = function(x1, y1, x2, y2, cutDept
         output += this.getFreePathRecursive(xInt, yInt, x2, y2, cutDepth, depthChange*(1-maxS), tol, this.copyTabs(tabsToCheck));
         
         // return cuts
-        return "//Begin Cross tab\n" + output + "//End Cross tab\n";
+        return output;
     };
 }
 
@@ -835,7 +881,7 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
     let endDepth = depthChange ? (cutDepth+ depthChange) : 0;
 
     if (!tabsToCheck.length) { // No tabs, we're fine
-        return "//No tabs \n" + this.arcCut(xc-X1, yc-Y1, X2, Y2, clockwise, endDepth);
+        return "//843 No tabs \n" + this.arcCutRadius(r, X2, Y2, clockwise, endDepth);
     };
     
     // Check first tab
@@ -844,36 +890,57 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
     // pop off another tab and check it
     let tab = tabsToCheck.pop().pop();
 
-    while (tab.length) {
-        let edge = tab.pop(),
+    // DEBUGGING 
+    let S1 = [], S2 = [], dvals = [], xpts = [], ypts = [], strOut = "Tabs left: "+this.copyTabs(tabsToCheck).length+"\n";
+
+    for (let i = 0; i < 4; i++) {
+                
+        let edge = tab[i],
             u = edge[0],
             v = edge[1],
             c = [xc, yc];
     
         // Get distance from center of circle to line (continue if < r)
-        let vc_0 = this.minus(u, c), // vector from center to endpoint of line
-            vc_0proj = this.scale( v, this.dot(vc_0, v)/this.norm(v) ), // projection along direction of line
+        /*let vc_0 = this.minus(u, c), // vector from center to endpoint of line
+            vc_0proj = this.scalePoint( v, this.dot(vc_0, v)/this.norm(v) ), // projection along direction of line
             pdist = this.norm(vc_0proj),                     // parallel distance
-            ndist = this.norm( this.minus(vc_0, vc_0proj) ); // normal distance
-        
-        if (ndist > r) {continue};
-        
+            ndist = this.norm( this.minus(vc_0, vc_0proj) ); // normal distance*/
+
+        let uc = this.minus(c, u),
+            dist = Math.abs(this.cross(uc, v)) / this.norm(v);
+
+        //pvals[i] = pdist;
+        dvals[i] = dist;
+        xpts[i] = u[0];
+        ypts[i] = u[1];
+
+        if (dist > r) {continue};
+
         // rotate edge of tab so that it's horizontal
         let phi = Math.acos(v[0]/this.norm(v)) * this.sign(v[1]),
-            u0 = this.rotatePoint(u, -phi),
-            v0 = this.rotatePoint(v, -phi);
-
+            u0 = this.rotatePoint(u, c, -phi),
+            v0 = this.rotatePoint(v, c, -phi);
+                
         // find radius of slice of circle
         let h = u0[1] - yc,
             d = Math.sqrt(r*r - h*h);
 
-        // determine if line intersects
+        /*// determine if line intersects
         let s1 = ((xc-d)-u0[0]) / v0[0],
             s2 = ((xc+d)-u0[0]) / v0[0],
             phi1 = Math.acos(-d/r) * this.sign(h),
-            phi2 = Math.acos(d/r) * this.sign(h);
+            phi2 = Math.acos(d/r) * this.sign(h);*/
 
-        if (s1 > 0 && s1 < 1) {
+        // rotate intersection points back into global coordinate system
+        // then check if they are on line
+        let p1 = this.rotatePoint([(xc-d), (yc+h)], c, phi),
+            p2 = this.rotatePoint([(xc+d), (yc+h)], c, phi),
+            s1 = this.norm(this.minus(p1,u)) / this.norm(v),
+            s2 = this.norm(this.minus(p2,u)) / this.norm(v),
+            phi1 = Math.acos(-d/r) * this.sign(h),
+            phi2 = Math.acos(d/r) * this.sign(h);
+                
+        if (s1 >= 0 && s1 <= 1) {
             let thetaInt = (phi + phi1 + 2*PI) % (2*PI);
 
             if (clockwise) {
@@ -887,7 +954,7 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
             }
         }
 
-        if (s2 > 0 && s2 < 1) {
+        if (s2 >= 0 && s2 <= 1) {
             let thetaInt = (phi + phi2 + 2*PI) % (2*PI);
 
             if (clockwise) {
@@ -901,60 +968,86 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
             }
         };
     };
-    
+
     // No intersections means are either entirely inside or outside tab
-    // if we are in tab, don't make cut (still allows vertical drill into tab)
+    // if we are in tab, don't make cut
     if (int.length == 0) {
-        if (this.isInTab(X1, Y1) || this.isInTab(X2, Y2)) {
-            return "//Completely inside tab " + this.arcCut(xc-X1, yc-Y1, X2, Y2, clockwise, false);
-        };
-        return "//No intersections on arc" + this.getFreeArcRecursive(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabs));
-    };
-    
-    // add start and end angles and sort
-    int.push([theta1]);
-    int.push([theta2]);
-    let thetaCut,
-        output = "";
+        let startTab = (this.isInTab(X1, Y1, tab) || this.isOnTab(X1, Y1, tab)),
+            endTab = (this.isInTab(X2, Y2, tab) || this.isOnTab(X1, Y1, tab));
 
-    if (clockwise) {thetaCut = this.negative(int).sort(function(a,b) {return a-b})}
-    else {thetaCut = int.sort(function(a,b) {return a-b})}
-    
-    for (let i = 1; i < thetaCut.length; i++) {
-        let th1 = thetaCut[i-1],
-            th2 = thetaCut[i],
-            x1 = xc + r*Math.cos(th1),
-            y1 = yc + r*Math.sin(th1),
-            x2 = xc + r*Math.cos(th2),
-            y2 = yc + r*Math.sin(th2),
-            startInTab = this.isInTab(x1, y1),
-            endInTab = this.isInTab(x2, y2);
+        if (startTab || endTab) {
+            let midx = X1 + (X2-X1)/2,
+                midy = Y1 + (Y2-Y1)/2;
 
-        let midx = x1 + (x2-x1)/2,
-            midy = y1 + (y2-y1)/2;
-
-        if (startInTab) {
-            output += "G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight());
-            output += "//Start in tab\n" + output + this.arcCut(xc-x1, yc-y1, x2, y2, clockwise, false);
-        } 
-        
-        else if (endInTab) {
-            output += "G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight());
-            output += "//End in tab\n" + output + this.arcCut(xc-x1, yc-y1, x2, y2, clockwise, false);
-        } 
-        
-        // if both points are exactly on tab, chord (and every point on it) will be in tab)
-        else if (this.isInTab(midx, midy)) {
-            output += "G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight());
-            output += "//Completely in tab\n" + output + this.arcCut(xc-x1, yc-y1, x2, y2, clockwise, false);
+            if (this.isInTab(midx, midy, tab) || this.isOnTab(midx, midy, tab)) { // inside tab - move up and cut from safe height
+                let part1 = "//942 Completely in tab\nG1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + "\n";
+                return part1 + this.arcCutRadius(r, X2, Y2, clockwise, false);
+            }
+            else {
+                let part1 = "//946 G1 Z" + cutDepth + "\n";
+                return part1 + this.getFreeArcRecursive(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck));
+            }
         }
-
-        // if this part runs, the arc is completely outside the tab 
         else {
-            output += this.getFreeArcRecursive(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabs));
+            return this.getFreeArcRecursive(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck));
         }
     };
-    return output;
+
+    if (int.length == 1) {
+        let x1 = X1, y1 = Y1, x2 = X2, y2 = Y2,
+            thetaInt = int[0],
+            xInt = xc + r*Math.cos(thetaInt),
+            yInt = yc + r*Math.sin(thetaInt);
+
+        // start on tab 
+        if (this.isOnTab(x1, y1, tab)) {
+            let output = ("G1 Z" + (cutDepth) + "\n"); // Put spindle down to continue cut
+            return  output + this.getFreeArcRecursive(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck));
+        };
+
+        // end on tab
+        if (this.isOnTab(x2, y2, tab)) {
+            let output = this.getFreeArcRecursive(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck));
+            return "" + output + ("G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + "\n");
+        };
+
+        // start (strictly) in tab
+        if (this.isInTab(x1, y1, tab)) {
+            let output = "G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + "\n" + this.arcCutRadius(r, xInt, yInt, clockwise, false);
+            output += ("G1 Z" + (cutDepth) + "\n"); // Put spindle down to continue cut
+            return  output + this.getFreeArcRecursive(xc, yc, r, thetaInt, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck)); // Check next segment
+        };
+        
+        // end (strictly) in tab - find free path to tab
+        let output = this.getFreeArcRecursive(xc, yc, r, theta1, thetaInt, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck));
+        return "" + output + ("G1 Z" + (this.workpiece.dimensions.H - this.getTabHeight()) + "\n") + this.arcCutRadius(r, x2, y2, clockwise, false);
+    };
+
+    if (int.length > 1) {
+        // Only really 1-2 intersections (we can get more than 2 if we cross a corner)
+        let thetaInt1 = clockwise ? Math.max.apply(Math, int) : Math.min.apply(Math, int), 
+            thetaInt2 = clockwise ? Math.min.apply(Math, int) : Math.max.apply(Math, int),
+            xInt1 = xc + r*Math.cos(thetaInt1),
+            yInt1 = yc + r*Math.sin(thetaInt1),
+            xInt2 = xc + r*Math.cos(thetaInt2),
+            yInt2 = yc + r*Math.sin(thetaInt2),
+            output = "";
+        
+        // first cut segment
+        output += this.getFreeArcRecursive(xc, yc, r, theta1, thetaInt1, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck));
+        output += ("G1 Z" + (this.workpiece.dimensions.H-this.getTabHeight()) + "\n");
+        
+        // traverse tab
+        output += this.arcCutRadius(r, xInt2, yInt2, clockwise, false);
+        
+        // second cut segment
+        output += "G1 Z" + (cutDepth) + "\n";
+        output += this.getFreeArcRecursive(xc, yc, r, thetaInt2, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck));
+        
+        // return cuts
+        return output;
+    };
+
 };
 
 TurtleShepherd.prototype.arcCut = function(xc0, yc0, x2, y2, Clockwise, endDepth) {
@@ -969,6 +1062,20 @@ TurtleShepherd.prototype.arcCut = function(xc0, yc0, x2, y2, Clockwise, endDepth
     }
     
     return "G3 X" + x2 + " Y" + y2 + " I" + xc0 + " J" + yc0 + "\n";
+};
+
+TurtleShepherd.prototype.arcCutRadius = function(r, x2, y2, Clockwise, endDepth) {
+    // clockwise is default
+    let clockwise = Clockwise;
+    if (clockwise === undefined) {
+        clockwise = true;
+    };
+    
+    if (clockwise) {
+        return "G2 X" + x2 + " Y" + y2 + " R" + r + "\n";
+    }
+    
+    return "G3 X" + x2 + " Y" + y2 + " R" + r + "\n";
 };
 
 TurtleShepherd.prototype.toGcode = function() {    
@@ -1053,12 +1160,18 @@ TurtleShepherd.prototype.toGcode = function() {
 
                 if ( (cutDepth > tabDepth) || (cutDepth + depthChange > tabDepth) ) {
                     gcodeStr += this.getFreeArc(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange);
+                    gcodeStr += "G1 Z" + Math.min(tabDepth, cutDepth) + "\n";
+                    gcodeStr += "G1 X" + x2 + " Y" + y2 + "\n";
                 } else {
-                    gcodeStr += this.arcCut((xc-x1), (yc-y1), x2, y2, clockwise, endDepth);
+                    gcodeStr += this.arcCutRadius(r, x2, y2, clockwise, endDepth);
+                    gcodeStr += "G1 Z" + Math.min(tabDepth, cutDepth) + "\n";
+                    gcodeStr += "G1 X" + x2 + " Y" + y2 + "\n";
                 }
             }
             else {
-                gcodeStr += this.arcCut(xc-x1, yc-y1, x2, y2, clockwise, endDepth);
+                gcodeStr += this.arcCutRadius(r, x2, y2, clockwise, endDepth);
+                gcodeStr += "G1 Z" + Math.min(tabDepth, cutDepth) + "\n";
+                gcodeStr += "G1 X" + x2 + " Y" + y2 + "\n";
             }
         }
         
@@ -1066,7 +1179,7 @@ TurtleShepherd.prototype.toGcode = function() {
             if (this.drillIntoTab(this.cache[i].x, this.cache[i].y, this.cache[i].cutdepth)) {
                 gcodeStr += "G1 Z" + tabDepth + "\n";
             } else {
-                gcodeStr += "G1 Z" + this.cache[i].cutdepth + "\n";
+                gcodeStr += "// cutdepth change G1 Z" + this.cache[i].cutdepth + "\n";
             }
         } 
         
@@ -1074,12 +1187,12 @@ TurtleShepherd.prototype.toGcode = function() {
             if (this.drillIntoTab(this.cache[i].x, this.cache[i].y, this.cache[i].cutdepth)) {
                 gcodeStr += "G1 Z" + tabDepth + "\n";
             } else {
-                gcodeStr += "G1 Z" + this.cache[i].cutdepth + "\n";
+                gcodeStr += "// start cut G1 Z" + this.cache[i].cutdepth + "\n";
             }
         } 
         
         else if (this.cache[i].cmd == "stopcut") {
-            gcodeStr += "G0 Z" + (this.restHeight) + "\n";
+            gcodeStr += "// stop cutG0 Z" + (this.restHeight) + "\n";
         }
     };
     
@@ -1103,23 +1216,18 @@ TurtleShepherd.prototype.debug_msg = function (st, clear) {
 // Geometric operations
 
 TurtleShepherd.prototype.rotateOrigin = function(x, y, angle) {
-    let radians = (Math.PI / 180) * angle,
-        cos = Math.cos(radians),
-        sin = Math.sin(radians),
-        nx = (cos * (x)) + (sin * (y)),
-        ny = (cos * (y)) - (sin * (x));
+    let cos = Math.cos(angle),
+        sin = Math.sin(angle),
+        nx = (cos * x) - (sin * y),
+        ny = (cos * y) + (sin * x);
     return [nx, ny];
 }
 
 TurtleShepherd.prototype.rotatePoint = function(Point, center, angle) {
-    let radians = (Math.PI / 180) * angle,
-        x = Point[0], y = Point[1],
+    let x = Point[0], y = Point[1],
         cx = center[0], cy = center[1],
-        cos = Math.cos(radians),
-        sin = Math.sin(radians),
-        rx = (cos * (x-cx)) + (sin * (y-cy)),
-        ry = (cos * (y-cy)) - (sin * (x-xc));
-    return [cx+rx, cy+ry];
+        [rx, ry] = this.rotateOrigin((x-cx), (y-cy), angle);
+    return [(cx+rx), (cy+ry)];
 }
 
 TurtleShepherd.prototype.plus = function(Point1, Point2) {
@@ -1136,11 +1244,17 @@ TurtleShepherd.prototype.minus = function(Point1, Point2) {
     return diff;
 }
 
-TurtleShepherd.prototype.dot = function(Point) {
+TurtleShepherd.prototype.dot = function(Point1, Point2) {
     let x0 = Point1[0], y0 = Point1[1],
         x1 = Point2[0], y1 = Point2[1],
         d = x0*x1 + y0*y1;
     return d;
+}
+
+TurtleShepherd.prototype.cross = function(Point1, Point2) {
+    let u1 = Point1[0], u2 = Point1[1],
+        v1 = Point2[0], v2 = Point2[1];
+    return u1*v2 - u2*v1;
 }
 
 TurtleShepherd.prototype.norm = function(Point) {
@@ -1150,10 +1264,12 @@ TurtleShepherd.prototype.norm = function(Point) {
     return d;
 }
 
-TurtleShepherd.prototype.scale = function(Point, s) {
+TurtleShepherd.prototype.scalePoint = function(Point, s) {
+//return [0, 0];
     let x0 = Point[0],
-        y0 = Point[1];
-    return [s*x0, s*y0];
+        y0 = Point[1],
+        x = x0*s, y = y0*s;
+    return [x, y];
 }
 
 TurtleShepherd.prototype.sign = function(a) {
@@ -1181,10 +1297,24 @@ TurtleShepherd.prototype.negative = function(array) {
     return array;
 }
 
-TurtleShepherd.prototype.isInTab = function(x, y) {
-    for (let i = 0; i < this.tabs.length; i++) {
-        let tab = this.tabs[i][0],
-            outside = false; // Is point to the right of any lines?
+TurtleShepherd.prototype.isInTab = function(x, y, tab) {
+    return (this.tabSide(x,y,tab) < 0);
+}
+
+TurtleShepherd.prototype.isOnTab = function(x, y, tab) {
+    return (this.tabSide(x,y,tab) == 0);
+}
+
+TurtleShepherd.prototype.tabSide = function(x, y, atab) {
+    let tabsOfInterest = [];
+
+    if (atab) { tabsOfInterest.push([atab]) }
+    else {tabsOfInterest = this.tabs};
+
+    for (let i = 0; i < tabsOfInterest.length; i++) {
+        let tab = tabsOfInterest[i][0],
+            outside = false, // Is point to the right of any lines?
+            on = false;
             
         for (let j = 0; j < 4; j++) { //Traverse edges
             let edge = tab[j],
@@ -1194,6 +1324,9 @@ TurtleShepherd.prototype.isInTab = function(x, y) {
                 y1 = edge[1][1],
                 D = x1*(y-y0) - y1*(x-x0);
 
+            if (Math.abs(D) < 0.0001) {
+                on = true;
+            }
             if (D < 0) {
                 outside = true;
                 break;
@@ -1201,12 +1334,57 @@ TurtleShepherd.prototype.isInTab = function(x, y) {
         };
 
         if (!outside) {
-            return true; 
+            if (on) {
+                return 0;
+            }
+            return -1;
         }
     };
 
     // If point isn't inside any tabs, return false
-    return false;
+    return 1;
+}
+
+TurtleShepherd.prototype.isNearTab = function(x, y, atab) {
+    let tabsOfInterest = [];
+
+    if (atab) { tabsOfInterest.push([atab]) }
+    else {tabsOfInterest = this.tabs};
+
+    tabsOfInterest = this.tabs;
+
+    for (let i = 0; i < tabsOfInterest.length; i++) {
+        let tab = tabsOfInterest[i][0],
+            outside = false, // Is point to the right of any lines?
+            on = false;
+            
+        for (let j = 0; j < 4; j++) { //Traverse edges
+            let edge = tab[j],
+                x0 = edge[0][0],
+                x1 = edge[1][0],
+                y0 = edge[0][1],
+                y1 = edge[1][1],
+                D = x1*(y-y0) - y1*(x-x0);
+
+            if (Math.abs(D) < 0.0001) {
+                on = true;
+            }
+            if (D < 0) {
+                outside = true;
+                break;
+            }
+        };
+
+        if (!outside) {
+            if (on) {
+                return 0;
+            }
+            return -1;
+        }
+    };
+
+    // If point isn't inside any tabs, return false
+    return 1;
 }
 
 TurtleShepherd.prototype.copyTabs = function(origTabs) {

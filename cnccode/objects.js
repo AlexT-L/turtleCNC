@@ -731,6 +731,7 @@ SpriteMorph.prototype.isCutting = function (){
 
 SpriteMorph.prototype.startCut = function (){
 	this.down();
+    this.addStopPoint(this.xPosition(), this.yPosition());
     var stage = this.parentThatIsA(StageMorph);
     stage.turtleShepherd.startCut(this.xPosition(), this.yPosition());
 }
