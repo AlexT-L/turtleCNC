@@ -196,18 +196,6 @@ SpriteMorph.prototype.addJumpLine = function(x1, y1, x2, y2) {
 
 // STITCH settings
 
-SpriteMorph.prototype.stopRunning = function () {
-    this.isRunning = false;
-}
-
-SpriteMorph.prototype.runningStitch = function (length, autoadjust=true) {
-	
-}
-
-SpriteMorph.prototype.beanStitch = function (length, autoadjust=true) {
-	
-}
-
 SpriteMorph.prototype.origForward = SpriteMorph.prototype.forward;
 SpriteMorph.prototype.forward = function (steps) {
     var dest,
@@ -225,16 +213,7 @@ SpriteMorph.prototype.forward = function (steps) {
     }
 
     if (dist != 0) {
-  		if ( this.isRunning  && this.isDown) {
-  			if (this.stitchoptions.autoadjust) {
-  				var real_length = dist / Math.round(dist / this.stitchoptions.length);
-          if (dist < this.stitchoptions.length)
-            real_length = dist;
-  				this.forwardBy(steps, real_length);
-  			} else {
-  				this.forwardBy(steps, this.stitchoptions.length);
-  			}
-  		} else {
+  		if (this.isDown) {
   			this.moveforward(steps);
   		}
     }
@@ -248,15 +227,6 @@ SpriteMorph.prototype.arcClockwise = function(r, dtheta) {
 SpriteMorph.prototype.arcCounterClockwise = function(r, dtheta) {
     this.moveArc(r, dtheta, false);
 }
-
-
-SpriteMorph.prototype.forwardByNr = function (totalsteps, steps) {
-   
-};
-
-SpriteMorph.prototype.forwardBy = function (totalsteps, stepsize) {
-
-};
 
 SpriteMorph.prototype.forwardSegemensWithEndCheck = function(steps, stepsize) {
   
@@ -350,14 +320,6 @@ SpriteMorph.prototype.chooseMachine = function (machine) {
 SpriteMorph.prototype.addMachine = function (name, x, y, z) {
     var stage = this.parentThatIsA(StageMorph);
     stage.turtleShepherd.setMachine(true, name, x, y, z);
-}
-
-SpriteMorph.prototype.moveforward = function (steps) {
-  if (this.isDown) {
-    this.doMoveForward(steps)
-  } else {
-    this.doMoveForward(steps)
-  }
 }
 
 SpriteMorph.prototype.addTab = function(x, y, angle=false, length, width ) {
@@ -661,7 +623,7 @@ SpriteMorph.prototype.addStopPoint = function() {
 
 //**********************************************************
 
-SpriteMorph.prototype.doMoveForward = function (steps) {
+SpriteMorph.prototype.moveforward = function (steps) {
 	var dest,
 		dist = steps * this.parent.scale || 0;
 		stage = this.parentThatIsA(StageMorph);
@@ -720,86 +682,46 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe, noShadow) {
           : Math.round( (deltaX >= 0 ? 0 : 180)  - (Math.atan(deltaY / deltaX) * 57.2957795131),8
         );
     angle = angle + 90;
-    //if (angle==-90) angle = 270;
 
     if ( Math.round(dist,5) <= 0.0001) {
 		  // jump in place - don't add / ignore
 		  //console.log("jump in place - don't add / ignore",  this.isDown,this.xPosition(), this.yPosition(), dist);
     } else {
-		if (this.stitchoptions.autoadjust) {
-			real_length = 0;
-			if ( Math.round(dist / this.stitchoptions.length) > 0)
-				real_length = dist / Math.round(dist / this.stitchoptions.length);
-			else
-				real_length = dist
 
-			if (dist < this.stitchoptions.length )
-			  stepsize = dist;
-			else
-			  stepsize = real_length;
-
-		} else {
-			stepsize = this.stitchoptions.length;
-		}
-
-		var steps = Math.floor(dist / stepsize);
-		var rest = dist - (steps * stepsize);
-
-
-		if ( this.isRunning  && this.isDown && steps > 0 ) {
-			rest = Math.round(rest,8);
-
-			//stepsize =  Math.round(stepsize,8);
-			this.setHeading(angle);
-			this.forwardSegemensWithEndCheck(steps, stepsize);
-
-			if (steps == 0 && rest > 0 || x != this.xPosition() || y != this.yPosition()) {
-				this.gotoXY(x,y);
-			}
-		} else {
-			this.origGotoXY(x, y, justMe);
-
-      // dont' stitch if is zero value length
-      // - shoud we filter out all noShadows?
-      // if (!noShadow && dist > 1) {
-      if (dist > 1) {
+        this.origGotoXY(x,y);
+        
+        // dont' cut if is zero value length
+        // - shoud we filter out all noShadows?
+        // if (!noShadow && dist > 1) {
+        if (dist != 0) {
         warn = this.parentThatIsA(StageMorph).turtleShepherd.moveTo(
-          oldx, oldy,
-          this.xPosition(), this.yPosition(),
-          this.isDown );
-      }
-
-			if (this.isDown) {
-				this.addCutLine(oldx, oldy, this.xPosition(), this.yPosition(), angle);
-				if (warn && !stage.turtleShepherd.ignoreWarning) {
-				}
-
-				if (this.parentThatIsA(StageMorph).turtleShepherd.isEmpty() || this.lastJumped)
-				this.lastJumped = false;
-			} else {
-				this.addJumpLine(oldx, oldy, this.xPosition(), this.yPosition());
-				this.lastJumped = true;
-			}
-			stage.moveTurtle(this.xPosition(), this.yPosition());
-		}
-
+            oldx, oldy,
+            this.xPosition(), this.yPosition(),
+            this.isDown );
+        }
+        
+        if (this.isDown) {
+	        this.addCutLine(oldx, oldy, this.xPosition(), this.yPosition(), angle);
+        } else {
+            this.addJumpLine(oldx, oldy, this.xPosition(), this.yPosition());
+        }
+        
+        stage.moveTurtle(this.xPosition(), this.yPosition());
 		this.setHeading(oldheading);
 	}
 };
 
-
+/*
 SpriteMorph.prototype.gotoXYBy = function (x, y, stepsize) {
   // this block is deprecated but keep it for compatibility
   stitchLength = this.stitchoptions.length;
   runState = this.isRunning;
   this.isRunning = true;
   this.stitchoptions.length = stepsize;
-  this.autoadjust = false;
   this.gotoXY(x,y);
-  this.autoadjust = false;
   this.stitchoptions.length = stitchLength;
   this.isRunning = runState;
-};
+};*/
 
 SpriteMorph.prototype.gotoXYIn = function (x, y, steps) {
     var stage = this.parentThatIsA(StageMorph);
@@ -866,22 +788,22 @@ SpriteMorph.prototype.drawTextDev = function (text, size, trim) {
 }
 
 SpriteMorph.prototype.drawTextScale = function (text, scale, trim) {
-  var stage = this.parentThatIsA(StageMorph);
-  var dest;
-  var myself = this;
-
-  if (!stage) {return; }
+    var stage = this.parentThatIsA(StageMorph);
+    var dest;
+    var myself = this;
+    
+    if (!stage) {return; }
 
 	function doAJump(x, y) {
 		var penState = myself.isDown;
 		myself.isDown = false;
-    if (trim) {
-      myself.gotoXY(x+2, y+2);
-      myself.gotoXY(x-2, y-2);
-      myself.gotoXY(x, y);
-    } else {
-      myself.gotoXY(x, y);
-    }
+        if (trim) {
+          myself.gotoXY(x+2, y+2);
+          myself.gotoXY(x-2, y-2);
+          myself.gotoXY(x, y);
+        } else {
+            myself.gotoXY(x, y);
+        }
 
 		//lf.gotoXY(x+2, y+2);
 		//myself.gotoXY(x, y);
@@ -889,15 +811,15 @@ SpriteMorph.prototype.drawTextScale = function (text, scale, trim) {
 	}
 
 	if (stage.fonts) {
-    heading = this.heading;
-    vx = Math.cos(radians(this.heading - 90));
-    vy = Math.sin(radians(this.heading - 90));
-    nx = Math.cos(radians(this.heading ));
-    ny = Math.sin(radians(this.heading ));
+        heading = this.heading;
+        vx = Math.cos(radians(this.heading - 90));
+        vy = Math.sin(radians(this.heading - 90));
+        nx = Math.cos(radians(this.heading ));
+        ny = Math.sin(radians(this.heading ));
     
-    if (!isNaN(text)) {
-      text = text.toString()
-    }
+        if (!isNaN(text)) {
+          text = text.toString()
+        }
     
 		for(var i in text) {
 			var index = text.charCodeAt(i) - 33;
@@ -907,78 +829,71 @@ SpriteMorph.prototype.drawTextScale = function (text, scale, trim) {
 			var nextIsPenUp = false;
 
 			if (stage.fonts[text[i]]){
-				if (this.isRunning)
-          coords = stage.fonts[text[i]]["stitch"];
-        else {
-          lines = stage.fonts[text[i]]["orig"];
-          coords = [];
-          for (var j=0; j<lines.length; j++) {
-            coords.push("jump");
-            for (var k=0; k<lines[j].length; k++) {
-              coords.push(lines[j][k])
-              if (k==0)
-                coords.push("move");
-            }
-          }
-        }
+				if (true)
+                    coords = stage.fonts[text[i]]["cut"];
+                else {
+                    lines = stage.fonts[text[i]]["orig"];
+                    coords = [];
+                    for (var j=0; j<lines.length; j++) {
+                        coords.push("jump");
+                        for (var k=0; k<lines[j].length; k++) {
+                            coords.push(lines[j][k])
+                            if (k==0)
+                            coords.push("move");
+                        }
+                    }
+                }
 
 				for (var j=0; j<coords.length; j++) {
-					if (coords[j] == "jump") {
+				    if (coords[j] == "jump") {
 						nextIsPenUp = true;
-            nextIsStitch = false;
+                        nextIsStitch = false;
 					} else if (coords[j] == "move") {
 						nextIsStitch = false;
-            nextIsPenUp = false;
-          } else if (coords[j] == "stitch") {
+                        nextIsPenUp = false;
+                    } else if (coords[j] == "stitch") {
 						nextIsStitch = true;
-            nextIsPenUp = false;
+                        nextIsPenUp = false;
 					} else {
-            maxx = Math.max(maxx, coords[j][0]);
-            dx = coords[j][0] * scale * vx - coords[j][1] * scale * vy;
-            dy = coords[j][1] * scale * ny - coords[j][0] * scale * nx;
+                        maxx = Math.max(maxx, coords[j][0]);
+                        dx = coords[j][0] * scale * vx - coords[j][1] * scale * vy;
+                        dy = coords[j][1] * scale * ny - coords[j][0] * scale * nx;
 						if (nextIsPenUp || j == 0  ) {
-							doAJump(
-                x + dx,
-                y - dy
-              )
+							doAJump(x + dx, y - dy)
 						} else if (nextIsStitch)	{
-							this.gotoXY(
-                x + dx,
-                y - dy
-              )
+						    this.gotoXY(x + dx, y - dy)
 						} else {
-              var runState = this.isRunning;
-              this.isRunning = false;
-              this.gotoXYBy(
-                x + dx,
-                y - dy,
-                  40 );
-              this.isRunning = runState;
-            }
+                            this.gotoXY(x + dx, y - dy);
+                        }
 					}
 				}
-        if (i == text.length - 1) {
-          dx = (maxx) * scale * vx;
-          dy = 0 - (maxx) * scale * nx;
-        } else {
-          dx = (maxx+5) * scale * vx;
-          dy = 0 - (maxx+5) * scale * nx;
-        }
-        doAJump(x + dx, y - dy);
+
+                if (i == text.length - 1) {
+                    dx = (maxx) * scale * vx;
+                    dy = 0 - (maxx) * scale * nx;
+                } else {
+                    dx = (maxx+5) * scale * vx;
+                    dy = 0 - (maxx+5) * scale * nx;
+                }
+
+                doAJump(x + dx, y - dy);
+
+
 			} else {
-        dx = 10 * scale * vx;
-        dy = 0 - 10 * scale * nx;
+                dx = 10 * scale * vx;
+                dy = 0 - 10 * scale * nx;
 				doAJump(x + dx, y - dy);
 			}
-	  }
+        }
     this.setHeading(heading);
-  } else {
+
+    } else {
 		console.log("no fonts loaded");
 	}
 };
 
 
-  SpriteMorph.prototype.getTextLength = function (text, size) {
+SpriteMorph.prototype.getTextLength = function (text, size) {
 
   scale = size/21.0;
 
@@ -998,7 +913,7 @@ SpriteMorph.prototype.drawTextScale = function (text, scale, trim) {
       var charwidth = 0;
 
 			if (stage.fonts[text[i]]){
-        if (this.isRunning)
+        if (true)
           coords = stage.fonts[text[i]]["stitch"];
         else {
           lines = stage.fonts[text[i]]["orig"];
@@ -1280,7 +1195,6 @@ THREE.Object3D.prototype.addLineFromPointToPointWithColor = function (originPoin
 
 SpriteMorph.prototype.resetAll = function () {
 	var myself = this;
-	myself.isRunning = false;
 	myself.setColor(StageMorph.prototype.defaultPenColor);
 	myself.parentThatIsA(StageMorph).setPenSize(1);
 	myself.gotoXY(0,0);
@@ -1313,41 +1227,6 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'reset',
         category: 'control'
     };
-    
-    this.blocks.forwardBy =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        category: 'motion',
-        spec: 'move %n steps by %n steps',
-        defaults: [100,10]
-    };
-    
-    
-    this.blocks.forwardByNr =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        category: 'motion',
-        spec: 'move %n steps in %n',
-        defaults: [100,10]
-    };
-    this.blocks.gotoXYBy =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        category: 'motion',
-        spec: 'go to x: %n y: %n by %n',
-        defaults: [0, 0, 10]
-    };
-    this.blocks.gotoXYIn =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        category: 'motion',
-        spec: 'go to x: %n y: %n in %n',
-        defaults: [0, 0, 10]
-    }; 
     this.blocks.pointTowards =
     {
 		only: SpriteMorph,
@@ -1659,119 +1538,6 @@ SpriteMorph.prototype.initBlocks = function () {
             defaults: [0,0,0]
     };
 
-    /*
-    this.blocks.down: {
-        only: SpriteMorph,
-        type: 'command',
-        category: 'cnc',
-        spec: 'cutting mode on'
-    },
-    this.blocks.up: {
-        only: SpriteMorph,
-        type: 'command',
-        category: 'cnc',
-        spec: 'cutting mode off'
-    },
-    */
-
-    // Embroidery blocks
-    /*
-    this.blocks.stopRunning =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'stop running',
-        category: 'embroidery',
-    };
-
-    this.blocks.runningStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'running stitch by %n steps',
-        category: 'embroidery',
-        defaults: [10]
-    };
-
-    this.blocks.beanStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'triple run by %n',
-        category: 'embroidery',
-        defaults: [10]
-    };
-
-    this.blocks.crossStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'cross stitch in %n by %n center %b',
-        category: 'embroidery',
-        defaults: [10, 10, true]
-    };
-
-    this.blocks.zigzagStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'zigzag with density %n width %n center %b',
-        category: 'embroidery',
-        defaults: [20, 20, true]
-    };
-
-    this.blocks.ZStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'Z-stitch with density %n width %n center %b',
-        category: 'embroidery',
-        defaults: [20, 10, true]
-    };
-
-    this.blocks.satinStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'satin stitch with width %n center %b',
-        category: 'embroidery',
-        defaults: [20, true]
-    };
-
-    this.blocks.tatamiStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'tatami stitch width %n interval %n center %b',
-        category: 'embroidery',
-        defaults: [100, 40, true]
-    };
-
-    this.blocks.tieStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'tie stitch',
-        category: 'embroidery',
-    };
-
-    this.blocks.jumpStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'jump stitch %b',
-        category: 'embroidery',
-        defaults: [true]
-    };
-
-    this.blocks.trimStitch =
-    {
-		    only: SpriteMorph,
-        type: 'command',
-        spec: 'trim',
-        category: 'embroidery',
-    };
-    */
 	// more blocks
 
     this.blocks.zoomToFit =
@@ -1881,8 +1647,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     if (cat === 'motion') {
 
         blocks.push(block('forward'));
-        //blocks.push(block('forwardByNr'));
-        //blocks.push(block('forwardBy'));
         blocks.push(block('arcClockwise'));
         blocks.push(block('arcCounterClockwise'));
         blocks.push('-');
@@ -1894,10 +1658,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('pointTowards'));
         blocks.push('-');
         blocks.push(block('gotoXY'));
-        //blocks.push(block('gotoXYIn'));
-        //blocks.push(block('gotoXYBy'));
         blocks.push(block('doGotoObject'));
-        //blocks.push(block('doGlide'));
         blocks.push('-');
         blocks.push(block('changeXPosition'));
         blocks.push(block('setXPosition'));
