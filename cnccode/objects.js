@@ -32,15 +32,13 @@ SpriteMorph.prototype.origInit = SpriteMorph.prototype.init;
 SpriteMorph.prototype.init = function(globals) {
     this.origInit(globals);
     this.hide();
-    this.lastJumped = false;
     this.turtle = null;
     this.isDown = true;
     this.cache = new Cache;
     this.color = StageMorph.prototype.defaultPenColor;
-    this.stitchoptions = {};
 };
 
-SpriteMorph.prototype.addCutLine = function(x1, y1, x2, y2, angle=false ) {
+SpriteMorph.prototype.addLineCut = function(x1, y1, x2, y2, angle=false ) {
   var stage = this.parentThatIsA(StageMorph);
 
   // Add cut to cache if on bottom
@@ -110,7 +108,7 @@ SpriteMorph.prototype.addCutLine = function(x1, y1, x2, y2, angle=false ) {
 		});
 		material.transparent = true;
 		var mesh = new THREE.Mesh( g.geometry, material );
-		stage.myCutLines.add(mesh);
+		stage.myLineCuts.add(mesh);
 	} */
 
 	// render as plain lines - OLD version
@@ -127,7 +125,7 @@ SpriteMorph.prototype.addCutLine = function(x1, y1, x2, y2, angle=false ) {
 			this.cache.addGeometry('stitch', geometry, [x1,y1,x2,y2]);
 		}
 		line = new THREE.Line(geometry, material);
-		stage.myCutLines.add(line);
+		stage.myLineCuts.add(line);
 	} */
 
 	// render as quads
@@ -153,7 +151,7 @@ SpriteMorph.prototype.addCutLine = function(x1, y1, x2, y2, angle=false ) {
 		line.translateY(y1 + (y2 - y1)/2);
     //if (!angle) angle = this.heading;
 		line.rotation.z = (90 - angle) * Math.PI / 180;
-		stage.myCutLines.add(line);
+		stage.myLineCuts.add(line);
 	}
 	this.reRender();
 };
@@ -725,7 +723,7 @@ SpriteMorph.prototype.moveforward = function (steps) {
 		    this.isDown );
 
 	    if (this.isDown) {
-		    this.addCutLine(oldx, oldy, this.xPosition(), this.yPosition(), this.heading);
+		    this.addLineCut(oldx, oldy, this.xPosition(), this.yPosition(), this.heading);
             this.addStopPoint();
 	    } else {
 		    this.addJumpLine(oldx, oldy, this.xPosition(), this.yPosition());
@@ -779,7 +777,7 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe, noShadow) {
         }
         
         if (this.isDown) {
-	        this.addCutLine(oldx, oldy, this.xPosition(), this.yPosition(), angle);
+	        this.addLineCut(oldx, oldy, this.xPosition(), this.yPosition(), angle);
         } else {
             this.addJumpLine(oldx, oldy, this.xPosition(), this.yPosition());
         }
@@ -1358,142 +1356,6 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: '%counterclockwise arc radius %n angle %n',
         defaults: [0, 0]
     }
-
-    // pen blocks
-
-    this.blocks.isPenDown =
-    {
-		only: SpriteMorph,
-        type: 'predicate',
-        category: 'pen',
-        spec: 'pen down?',
-    };
-
-    this.blocks.getPenSize  =
-    {
-		only: SpriteMorph,
-        type: 'reporter',
-        category: 'pen',
-        spec: 'pen size',
-    };
-
-	// pen color blocks
-
-	this.blocks.setColor = {
-		only: SpriteMorph,
-		type: 'command',
-		category: 'colors',
-		spec: 'set color to %clr'
-	};
-
-    this.blocks.setColorRGB =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        category: 'colors',
-        spec: 'set color to RGB %n %n %n',
-        defaults: [0, 255, 0]
-    };
-
-    this.blocks.setColorHex =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        category: 'colors',
-        spec: 'set color to hex %s',
-        defaults: ['#ff0000']
-    };
-
-    this.blocks.setColorHSV =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        category: 'colors',
-        spec: 'set color to HSV %n %n %n',
-        defaults: [0.3, 0.7, 0.6]
-    };
-
-    this.blocks.setOpacity =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        category: 'pen',
-        spec: 'set opacity to %n',
-        defaults: [100]
-    };
-
-    this.blocks.changeOpacity =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        category: 'pen',
-        spec: 'change opacity by %n',
-        defaults: [10]
-    };
-
-    this.blocks.getOpacity =
-    {
-		only: SpriteMorph,
-        type: 'reporter',
-        category: 'pen',
-        spec: 'opacity',
-    };
-
-	this.blocks.getColorRGB =
-    {
-		only: SpriteMorph,
-        type: 'reporter',
-        category: 'colors',
-        spec: 'RGB color',
-    };
-
-	this.blocks.getColorHSV =
-    {
-		only: SpriteMorph,
-        type: 'reporter',
-        category: 'colors',
-        spec: 'HSV color',
-    };
-
-	this.blocks.getColorHex =
-    {
-		only: SpriteMorph,
-        type: 'reporter',
-        category: 'colors',
-        spec: 'hex color',
-    };
-
-	// color
-    this.blocks.pickHue =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        spec: 'set color by hue %huewheel',
-        category: 'colors'
-    };
-    this.blocks.setHSB =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        spec: 'set %hsb to %n',
-        category: 'colors',
-        defaults: ['hue', 50]
-    };
-    this.blocks.changeHSB =
-    {
-		only: SpriteMorph,
-        type: 'command',
-        spec: 'change %hsb by %n',
-        category: 'colors',
-        defaults: ['hue', 10]
-    };
-    this.blocks.getHSB =
-    {
-		only: SpriteMorph,
-        type: 'reporter',
-        spec: 'color: %hsb',
-        category: 'colors'
-    };
     
     // CNC blocks
     
@@ -2180,14 +2042,14 @@ StageMorph.prototype.init = function (globals) {
     this.myObjects = new THREE.Object3D();
     this.myTabs = new THREE.Object3D();
     this.myStopPoints = new THREE.Object3D();
-    this.myCutLines = new THREE.Object3D();
+    this.myLineCuts = new THREE.Object3D();
     this.myArcCuts = new THREE.Object3D();
     this.myJumpLines = new THREE.Object3D();
     this.myJumpArcs = new THREE.Object3D();
     this.scene.add(this.myObjects);
     this.scene.add(this.myTabs);
     this.scene.add(this.myStopPoints);
-    this.scene.add(this.myCutLines);
+    this.scene.add(this.myLineCuts);
     this.scene.add(this.myArcCuts);
     this.scene.add(this.myJumpLines);
     this.scene.add(this.myJumpArcs);
@@ -2293,8 +2155,8 @@ StageMorph.prototype.clearAll = function () {
     /*for (var i = this.myObjects.children.length - 1; i >= 0; i--) {
         this.myObjects.remove(this.myObjects.children[i]);
     }*/
-    for (i = this.myCutLines.children.length - 1; i >= 0; i--) {
-        this.myCutLines.remove(this.myCutLines.children[i]);
+    for (i = this.myLineCuts.children.length - 1; i >= 0; i--) {
+        this.myLineCuts.remove(this.myLineCuts.children[i]);
     }
     for (i = this.myArcCuts.children.length - 1; i >= 0; i--) {
         this.myArcCuts.remove(this.myArcCuts.children[i]);
@@ -2496,7 +2358,7 @@ StageMorph.prototype.initCamera = function () {
         myself.camera.fitScene = function () {
 
 
-            var boundingBox = new THREE.Box3().setFromObject(myself.myCutLines),
+            var boundingBox = new THREE.Box3().setFromObject(myself.myLineCuts),
                 boundingSphere = boundingBox.getBoundingSphere(),
                 center = boundingSphere.center,
                 distance = boundingSphere.radius;
@@ -2790,7 +2652,7 @@ function Cache () {
 
 Cache.prototype.init = function () {
     this.materials = [];
-    this.geometries = { stitch: [], circle: [], jumpArc: [], arc: [], plane: [], meshline: [] };
+    this.geometries = { circle: [], jumpArc: [], arc: [], plane: [], meshline: [] };
     this.segments = [];
 };
 
