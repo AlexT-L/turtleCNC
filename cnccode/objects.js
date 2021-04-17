@@ -43,6 +43,27 @@ SpriteMorph.prototype.init = function(globals) {
 SpriteMorph.prototype.addCutLine = function(x1, y1, x2, y2, angle=false ) {
   var stage = this.parentThatIsA(StageMorph);
 
+  // Add cut to cache if on bottom
+    let ts = stage.turtleShepherd,
+        wp = ts.workpiece;
+
+    if (wp) {
+        if (ts.cutDepth >= wp.dimensions.H) {
+            let l = Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1)),
+                segs = this.cache.segments,
+                s = 0;
+            
+            if (segs[0]) {
+                s = segs[segs.length-1].s;
+            }
+
+            this.cache.segments.push({
+                'x1':x1, 'y1':y1, 'x2':x2, 'y2':y2,
+                'l':l, 's':s, 'angle':angle, 'type':'line'
+            });
+        }
+    }
+
   if (this.cutLines === null) {
     this.cutLines = new THREE.Group();
   }
@@ -252,6 +273,56 @@ SpriteMorph.prototype.addTabLocation = function(x, y, angle) {
     this.addTab(x, y, angle);
 }
 
+SpriteMorph.prototype.addNumTabs = function(n) {
+    let wp = this.parentThatIsA(StageMorph).turtleShepherd.workpiece;
+        segments = this.cache.cutSegments,
+        pathLength = segments[segments.length].s,
+        numTabs = Math.max(Math.round(pathLength/delta)),
+        ds = pathLength/numTabs,
+        count = 0;
+
+    if (!workpiece) {
+        throw new Error("Cannot add tabs, no workpiece dimensions set");
+    };
+
+
+    for (let i = 0; i < segments.length; i++) {
+        let sTarget = (count + 0.5)*ds,
+            si = segments[i].s;
+
+        if (sTarget < si) {
+            if (segments[i].type == 'line') {
+                let d = (sTarget - segments[Math.max(0, i-1)].l)/segments[i].l;
+                    x = segments[i].x1 + d*(segments[i].x2 - segments[i].x1),
+                    y = segments[i].y1 + (sTarget/segments[i].l)*(segments[i].y2 - segments[i].y1);
+
+                this.addTab(x, y, segments[i].angle);
+                count++;
+            }
+
+            if (segments[i].type == 'arc') {
+                let xc = segments[i].xc, yc = segments[i].yc, r = segments[i].r,
+                    theta1 = segments[i].theta1, theta2 = segments[i].theta2,
+                    d = (sTarget - segments[Math.max(0, i-1)].l)/segments[i].l,
+                    angle = theta1 + d*(theta2-theta1),
+                    x = xc + r*Math.cos(angle),
+                    y = yc + r*Math.sin(angle);
+
+                this.addTab(x, y, angle);
+                count++;
+            }
+        }
+    }
+}
+
+SpriteMorph.prototype.addSpaceTabs = function(delta) {
+    let segments = this.cache.cutSegments,
+        pathLength = segments[segments.length].s,
+        numTabs = Math.max(Math.round(pathLength/delta));
+        
+    this.addNumTabs(numTabs);
+}
+
 SpriteMorph.prototype.setTool = function(diameter, flutes){
     if (!isNaN(diameter)) {
         this.size = Math.min(Math.max(+diameter, 0.0001), 1000);
@@ -275,9 +346,18 @@ SpriteMorph.prototype.isCutting = function (){
 }
 
 SpriteMorph.prototype.startCut = function (){
+    var stage = this.parentThatIsA(StageMorph),
+        ts = stage.turtleShepherd,
+        wp = ts.workpiece;
+
+    // clear cache if we are restarting cut
+    if (!this.down() && wp) {
+        if (ts.cutDepth >= wp.dimensions.H) 
+            this.cache.clearSegments();
+    };
+
 	this.down();
     this.addStopPoint(this.xPosition(), this.yPosition());
-    var stage = this.parentThatIsA(StageMorph);
     stage.turtleShepherd.startCut(this.xPosition(), this.yPosition());
 }
 
@@ -2711,6 +2791,7 @@ function Cache () {
 Cache.prototype.init = function () {
     this.materials = [];
     this.geometries = { stitch: [], circle: [], jumpArc: [], arc: [], plane: [], meshline: [] };
+    this.segments = [];
 };
 
 Cache.prototype.clear = function () {
@@ -2750,3 +2831,7 @@ Cache.prototype.findGeometry = function (type, params) {
         return null;
     }
 };
+
+Cache.prototype.clearSegments = function () {
+    this.segments = [];
+}
