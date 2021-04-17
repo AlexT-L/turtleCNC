@@ -218,7 +218,7 @@ IDE_Morph.prototype.applySavedTurtleStitchSettings = function () {
 IDE_Morph.prototype.unitsMenu = function () {
     var menu = new MenuMorph(this),
         world = this.world(),
-        pos = this.controlBar.turtlestitchButton.bottomLeft(),
+        pos = this.controlBar.turtlecncButton.bottomLeft(),
         myself = this;
 
     menu.addItem(
@@ -674,7 +674,7 @@ IDE_Morph.prototype.createControlBar = function () {
     // settingsButton
     button = new PushButtonMorph(
         this,
-        'turtlestitchMenu',
+        'turtlecncMenu',
         new SymbolMorph('turtle', 14)
         //new Morph.fromImageURL('cnccode/assets/turtles.png')
         //'\u2699'
@@ -692,9 +692,9 @@ IDE_Morph.prototype.createControlBar = function () {
     button.drawNew();
     // button.hint = 'edit settings';
     button.fixLayout();
-    turtlestitchButton = button;
-    this.controlBar.add(turtlestitchButton);
-    this.controlBar.turtlestitchButton = turtlestitchButton; // for menu positioning
+    turtlecncButton = button;
+    this.controlBar.add(turtlecncButton);
+    this.controlBar.turtlecncButton = turtlecncButton; // for menu positioning
 
 
 
@@ -732,8 +732,8 @@ IDE_Morph.prototype.createControlBar = function () {
         settingsButton.setCenter(myself.controlBar.center());
         settingsButton.setLeft(this.left());
 
-        turtlestitchButton.setCenter(myself.controlBar.center());
-        turtlestitchButton.setLeft(settingsButton.right() + padding);
+        turtlecncButton.setCenter(myself.controlBar.center());
+        turtlecncButton.setLeft(settingsButton.right() + padding);
 
         projectButton.setCenter(myself.controlBar.center());
         projectButton.setRight(settingsButton.left() - padding);
@@ -798,11 +798,11 @@ IDE_Morph.prototype.createControlBar = function () {
         this.label.drawNew();
         this.add(this.label);
         this.label.setCenter(this.center());
-        this.label.setLeft(this.turtlestitchButton.right() + padding);
+        this.label.setLeft(this.turtlecncButton.right() + padding);
     };
 };
 
-IDE_Morph.prototype.turtlestitchMenu = function () {
+IDE_Morph.prototype.turtlecncMenu = function () {
     var menu,
         stage = this.stage,
         world = this.world(),
@@ -938,7 +938,7 @@ IDE_Morph.prototype.toggleAppMode = function (appMode) {
         this.controlBar.settingsButton,
         this.controlBar.stageSizeButton,
         //this.controlBar.steppingButton,
-        this.controlBar.turtlestitchButton,
+        this.controlBar.turtlecncButton,
         //this.controlBar.largeStageSizeButton,
         this.spriteEditor,
         this.paletteHandle,
@@ -1019,7 +1019,7 @@ IDE_Morph.prototype.aboutTurtleStitch = function () {
     );
     btn2 = dlg.addButton(
 		function () {
-            window.open('https://www.turtlestitch.org/', 'TurtleStitchWebsite');
+            window.open('https://www.turtlecnc.org/', 'TurtleStitchWebsite');
         },
         'TurtleStitch Website',
     );
@@ -1217,7 +1217,7 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     elements.push('Workpiece: ');
     element = new StringMorph();
     element.update = function () {
-        this.text = (stage.turtleShepherd.getJumpCount()).toString()+ "        ";
+        this.text = (stage.turtleShepherd.getWorkpieceDimensions()).toString()+ "        ";
     };*/
     element.columns = 3;
     element.newColumn = 1;
@@ -1459,7 +1459,7 @@ IDE_Morph.prototype.fixLayout = function (situation) {
 IDE_Morph.prototype.downloadGcode = function() {
     GcodeStr = this.stage.turtleShepherd.toGcode();
     blob = new Blob([GcodeStr], {type: 'text/plain;charset=utf-8'});
-    saveAs(blob, (this.projectName ? this.projectName : 'turtlestitch') + '.gcode');
+    saveAs(blob, (this.projectName ? this.projectName : 'turtlecnc') + '.gcode');
 };
 
 /*
@@ -1467,19 +1467,19 @@ IDE_Morph.prototype.downloadGcode = function() {
 IDE_Morph.prototype.downloadSVG = function() {
     svgStr = this.stage.turtleShepherd.toSVG();
     blob = new Blob([svgStr], {type: 'text/plain;charset=utf-8'});
-    saveAs(blob, (this.projectName ? this.projectName : 'turtlestitch') + '.svg');
+    saveAs(blob, (this.projectName ? this.projectName : 'turtlecnc') + '.svg');
 };
 
 // EXP export
 IDE_Morph.prototype.downloadEXP = function() {
     expUintArr = this.stage.turtleShepherd.toEXP();
     blob = new Blob([expUintArr], {type: 'application/octet-stream'});
-    saveAs(blob, (this.projectName ? this.projectName : 'turtlestitch') + '.exp');
+    saveAs(blob, (this.projectName ? this.projectName : 'turtlecnc') + '.exp');
 };
 
 // DST export
 IDE_Morph.prototype.downloadDST = function() {
-	var name = this.projectName ? this.projectName : 'turtlestitch';
+	var name = this.projectName ? this.projectName : 'turtlecnc';
     expUintArr = this.stage.turtleShepherd.toDST(name);
     blob = new Blob([expUintArr], {type: 'application/octet-stream'});
     saveAs(blob, name + '.dst');
@@ -1487,7 +1487,7 @@ IDE_Morph.prototype.downloadDST = function() {
 
 // PNG export
 IDE_Morph.prototype.downloadPNG = function() {
-	var name = this.projectName ? this.projectName : 'turtlestitch';
+	var name = this.projectName ? this.projectName : 'turtlecnc';
 
 	dataURL = this.stage.turtleShepherd.toPNG(name);
 	var binary = atob( dataURL.substr( dataURL.indexOf(',') + 1 ) ),
@@ -2501,7 +2501,7 @@ DialogBoxMorph.prototype.promptOrder = function (
     this.popUp(world);
 };
 
-
+/*
 IDE_Morph.prototype.uploadOrder = function () {
     var myself = this,
         world = this.world();
@@ -2522,11 +2522,11 @@ IDE_Morph.prototype.uploadOrder = function () {
 				blob_exp = new Blob([expUintArr], {type: 'application/octet-stream'});
 
 				var fd = new FormData;
-				var name = (this.projectName ? this.projectName : 'turtlestitch')
+				var name = (this.projectName ? this.projectName : 'turtlecnc')
 				fd.append('public', userdata.choice_pub);
 				fd.append('filename', name + ".dst");
 				fd.append('projectname', name);
-				fd.append('source', 'turtlestitch');
+				fd.append('source', 'turtlecnc');
 				fd.append('url', window.location.href);
 				fd.append('dstfile', blob_dst, name + ".dst");
 				fd.append('expfile', blob_exp, name + ".exp");
@@ -2591,7 +2591,7 @@ IDE_Morph.prototype.uploadOrder = function () {
 			'No stitches to upload, please (re)generate a drawing first!',
 			world);
 	}
-};
+};*/
 
 DialogBoxMorph.prototype.informWithLink = function (
     title,

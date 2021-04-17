@@ -1,30 +1,21 @@
-# TurtleStitch
+# TurtleCNC
 
-TurtleStitch is a visual, blocks-based programming environment for turtle graphics with a focus on 
-embroidery file generation. 
+TurtleCNC is based on TurtleStitch, a visual, blocks-based programming environment for turtle graphics with a focus on 
+embroidery file generation, which has been modified to generate CNC code.
 
-The generated patterns can be exported as a embroidery file (currently Melco/EXP and Tajima/DST are supported) or SVG vector graphic
+The generated patterns can be exported as a gcode file.
 
-TurtleStitch is based on [Snap<i>!</i> Build Your Own Blocks](http://snap.berkeley.edu) written by Jens Mönig and Brian Harvey.
+TurtleCNC and TurtleStitch are based on [Snap<i>!</i> Build Your Own Blocks](http://snap.berkeley.edu) written by Jens Mönig and Brian Harvey.
 
 It uses webgl [ThreeJS](http://threejs.org) as rendering engine for performance as smooth as possible.
 
 
-## Try it
-
-For full functionality run it from the TurtleStitch platform on http://www.turtlestitch.org
-
-http://www.turtlestitch.org/run
-
-or the testing the current develeopment version integrated into the platform:
-
-http://www.turtlestitch.org/beta
-
-You can also try the [latest development version from the git master branch](https://backface.github.io/turtlestitch/) via github pages (no cloud access!)
-
-
 
 ## Acknowledgements / License
+
+TurtleStitch
+http://www.turtlestitch.org/run
+
 
 Snap! Build Your Own Blocks [http://snap.berkeley.edu] is a 
 visual, blocks based programming language inspired by Scratch

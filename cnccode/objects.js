@@ -213,9 +213,7 @@ SpriteMorph.prototype.forward = function (steps) {
     }
 
     if (dist != 0) {
-  		if (this.isDown) {
-  			this.moveforward(steps);
-  		}
+  		this.moveforward(steps);
     }
 };
 
@@ -750,11 +748,6 @@ SpriteMorph.prototype.gotoXYIn = function (x, y, steps) {
 				  - (Math.atan(deltaY / deltaX) * 57.2957795131)
 		  );
 	this.setHeading(angle + 90);
-
-  if (dist > 0) {
-		var stepsize =  dist / steps;
-		this.forwardSegemensWithEndCheck(steps,stepsize);
-  }
 };
 
 
