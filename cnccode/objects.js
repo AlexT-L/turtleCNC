@@ -47,17 +47,18 @@ SpriteMorph.prototype.addLineCut = function(x1, y1, x2, y2, angle=false ) {
 
     if (wp) {
         if (ts.cutDepth >= wp.dimensions.H) {
+            //throw new Error("Line cut added");
             let l = Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1)),
                 segs = this.cache.segments,
-                s = 0;
+                s = l;
             
-            if (segs[0]) {
-                s = segs[segs.length-1].s;
+            if (segs.length) {
+                s += segs[segs.length-1].s;
             }
 
             this.cache.segments.push({
                 'x1':x1, 'y1':y1, 'x2':x2, 'y2':y2,
-                'l':l, 's':s, 'angle':angle, 'type':'line'
+                'l':l, 's':s, 'angle':(90-angle), 'type':'line'
             });
         }
     }
@@ -213,8 +214,6 @@ SpriteMorph.prototype.addJumpLine = function(x1, y1, x2, y2) {
     this.reRender();
 };
 
-// STITCH settings
-
 SpriteMorph.prototype.origForward = SpriteMorph.prototype.forward;
 SpriteMorph.prototype.forward = function (steps) {
     var dest,
@@ -272,49 +271,56 @@ SpriteMorph.prototype.addTabLocation = function(x, y, angle) {
 }
 
 SpriteMorph.prototype.addNumTabs = function(n) {
+    if (!this.cache.segments.length) throw new Error("No Segments");
+
     let wp = this.parentThatIsA(StageMorph).turtleShepherd.workpiece;
-        segments = this.cache.cutSegments,
-        pathLength = segments[segments.length].s,
-        numTabs = Math.max(Math.round(pathLength/delta)),
-        ds = pathLength/numTabs,
+        segments = this.cache.segments,
+        pathLength = segments[(segments.length-1)].s,
+        ds = pathLength/n,
         count = 0;
 
-    if (!workpiece) {
+    if (!wp) {
         throw new Error("Cannot add tabs, no workpiece dimensions set");
     };
 
+    let sTarget = 0.5*ds, si;
 
     for (let i = 0; i < segments.length; i++) {
-        let sTarget = (count + 0.5)*ds,
-            si = segments[i].s;
+        si = segments[i].s;
 
-        if (sTarget < si) {
+        while (sTarget < si) {
             if (segments[i].type == 'line') {
-                let d = (sTarget - segments[Math.max(0, i-1)].l)/segments[i].l;
+                let s0 = (i > 0) ? segments[i-1].s : 0,
+                    d = (sTarget - s0)/segments[i].l,
                     x = segments[i].x1 + d*(segments[i].x2 - segments[i].x1),
-                    y = segments[i].y1 + (sTarget/segments[i].l)*(segments[i].y2 - segments[i].y1);
+                    y = segments[i].y1 + (sTarget/segments[i].l)*(segments[i].y2 - segments[i].y1),
+                    angle = segments[i].angle;
 
-                this.addTab(x, y, segments[i].angle);
-                count++;
+                this.addTab(x, y, angle);
             }
 
             if (segments[i].type == 'arc') {
-                let xc = segments[i].xc, yc = segments[i].yc, r = segments[i].r,
+                let s0 = (i > 1) ? segments[i-1].s : 0,
+                    xc = segments[i].xc, yc = segments[i].yc, r = segments[i].r,
                     theta1 = segments[i].theta1, theta2 = segments[i].theta2,
-                    d = (sTarget - segments[Math.max(0, i-1)].l)/segments[i].l,
-                    angle = theta1 + d*(theta2-theta1),
-                    x = xc + r*Math.cos(angle),
-                    y = yc + r*Math.sin(angle);
+                    d = (sTarget - s0)/segments[i].l,
+                    thTab = theta1 + d*(theta2-theta1),
+                    x = xc + r*Math.cos(thTab),
+                    y = yc + r*Math.sin(thTab),
+                    angle = segments[i].angle + (180 / Math.PI)*d*(theta2-theta1);
 
                 this.addTab(x, y, angle);
-                count++;
             }
+
+            sTarget = (++count + 0.5)*ds;
         }
     }
 }
 
 SpriteMorph.prototype.addSpaceTabs = function(delta) {
-    let segments = this.cache.cutSegments,
+    if (!this.cache.segments.length) throw new Error("No segments");
+
+    let segments = this.cache.segments,
         pathLength = segments[segments.length].s,
         numTabs = Math.max(Math.round(pathLength/delta));
         
@@ -349,10 +355,10 @@ SpriteMorph.prototype.startCut = function (){
         wp = ts.workpiece;
 
     // clear cache if we are restarting cut
-    if (!this.down() && wp) {
+    /*if (!this.down() && wp) {
         if (ts.cutDepth >= wp.dimensions.H) 
             this.cache.clearSegments();
-    };
+    };*/
 
 	this.down();
     this.addStopPoint(this.xPosition(), this.yPosition());
@@ -399,6 +405,14 @@ SpriteMorph.prototype.addMachine = function (name, x, y, z) {
 }
 
 SpriteMorph.prototype.addTab = function(x, y, angle=false, length, width ) {
+    // if tab already exists at (x,y), don't add
+    for (let i = 0; i < this.cache.tabs.length; i++) {
+        if (this.cache.tabs[i].x == x && this.cache.tabs[i].y == y) return;
+    }
+
+    // if there is no tab already at this location, then add tab
+    this.cache.tabs.push({'x':x, 'y':y})
+
     // Set dimensions automatically if not specified
     let l = this.penSize(),
         w = 0;
@@ -469,11 +483,11 @@ SpriteMorph.prototype.moveArc = function(r, dtheta, clockwise) {
         dyb = r*Math.sin(radians(-dtheta));
     }
 
-    // Find dx2, dy2 and distance
+    // Find dx, dy and distance
     let theta1 = 90 - this.heading,
-        dx2 = dxb*Math.cos(radians(theta1)) - dyb*Math.sin(radians(theta1)),
-        dy2 = dyb*Math.cos(radians(theta1)) + dxb*Math.sin(radians(theta1)),
-        dist = Math.sqrt(dx2**2 + dy2**2),
+        dx = dxb*Math.cos(radians(theta1)) - dyb*Math.sin(radians(theta1)),
+        dy = dyb*Math.cos(radians(theta1)) + dxb*Math.sin(radians(theta1)),
+        dist = Math.sqrt(dx**2 + dy**2),
         chordHeading, newHeading;
 
     if (clockwise) { 
@@ -503,6 +517,30 @@ SpriteMorph.prototype.moveArc = function(r, dtheta, clockwise) {
 	    if (this.isDown) {
 		    this.addArcCut(x1, y1, theta1, r, dtheta, clockwise);
             this.addStopPoint(this.xPosition(), this.yPosition());
+     
+            // add cut to cache if full thickness cut
+            if (stage.turtleShepherd.workpiece) {
+                if (stage.turtleShepherd.cutDepth >= stage.turtleShepherd.workpiece.dimensions.H) {
+                    let th1rad = (Math.PI / 180) * theta1c,
+                        th2rad = (Math.PI / 180) * theta2c,
+                        xc = x1 - r*Math.cos(th1rad),
+                        yc = y1 - r*Math.sin(th1rad),
+                        l = Math.abs(r*(th2rad-th1rad)),
+                        s = l;
+
+                    if (this.cache.segments.length) {
+                        s += this.cache.segments[this.cache.segments.length-1].s;
+                    }
+
+                    this.cache.segments.push({
+                        'type':'arc',
+                        'x1':x1, 'y1':y1, 'x2':(x1+dx), 'x2':(y1+dy),
+                        'xc':xc, 'yc':yc, 'r':r,
+                        'theta1':th1rad, 'theta2':th2rad,
+                        'l':l, 's':s, 'angle':theta1
+                    });
+                }
+            }
 	    } else {
 		    this.addJumpArc(x1, y1, theta1, r, dtheta, clockwise);
 	    }
@@ -513,7 +551,7 @@ SpriteMorph.prototype.moveArc = function(r, dtheta, clockwise) {
 SpriteMorph.prototype.addArcCut = function(x1, y1, theta1, r, dtheta, clockwise) {
     var stage = this.parentThatIsA(StageMorph);
     
-    // Find theta1 and center
+    // Find theta1, theta2 and thickness
     let theta2 = theta1 + dtheta,
         theta1Rad = theta1 * Math.PI/180,
         theta2Rad = theta2 * Math.PI/180,
@@ -686,7 +724,7 @@ SpriteMorph.prototype.addStopPoint = function() {
 
     let material = this.cache.findMaterial( pColor, pOpacity);
 	if (!material) {
-		material = new THREE.MeshBasicMaterial( { color: arcColor, opacity: arcOpacity} );
+		material = new THREE.MeshBasicMaterial( { color: pColor, opacity: pOpacity} );
 		this.cache.addMaterial(material);
 	}
 
@@ -786,19 +824,6 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe, noShadow) {
 		this.setHeading(oldheading);
 	}
 };
-
-/*
-SpriteMorph.prototype.gotoXYBy = function (x, y, stepsize) {
-  // this block is deprecated but keep it for compatibility
-  stitchLength = this.stitchoptions.length;
-  runState = this.isRunning;
-  this.isRunning = true;
-  this.stitchoptions.length = stepsize;
-  this.gotoXY(x,y);
-  this.stitchoptions.length = stitchLength;
-  this.isRunning = runState;
-};*/
-
 
 SpriteMorph.prototype.gotoXYIn = function (x, y, steps) {
     var stage = this.parentThatIsA(StageMorph);
@@ -1187,27 +1212,6 @@ SpriteMorph.prototype.getColorHSV = function (){
 	return new List(this.color.hsv());
 }
 
-
-// PEN UP DOWN
-/*
-SpriteMorph.prototype.isPenDown = function (){
-	return this.isDown;
-}
-
-SpriteMorph.prototype.getPenSize = function (){
-	return this.penSize();
-}
-
-SpriteMorph.prototype.setSize = function (size) {
-    var stage = this.parentThatIsA(StageMorph);
-    if (!isNaN(size)) {
-        this.size = Math.min(Math.max(+size, 0.0001), 1000);
-    }
-    stage.setPenSize(this.size);
-    stage.turtleShepherd.setPenSize(this.size);
-};
-*/
-
 SpriteMorph.prototype.drawLine = function (start, dest) {};
 
 SpriteMorph.prototype.origSilentGotoXY = SpriteMorph.prototype.silentGotoXY;
@@ -1217,6 +1221,7 @@ SpriteMorph.prototype.silentGotoXY = function (x, y, justMe) {
 
 SpriteMorph.prototype.origClear = SpriteMorph.prototype.clear;
 SpriteMorph.prototype.clear = function () {
+    this.cache.clear();
     this.origClear();
     this.parentThatIsA(StageMorph).clearAll();
     this.parentThatIsA(StageMorph).turtleShepherd.clear();
@@ -1474,6 +1479,20 @@ SpriteMorph.prototype.initBlocks = function () {
             defaults: [0,0,0]
     };
 
+    this.blocks.addNumTabs = {
+            type: 'command',
+            category: 'cnc',
+            spec: 'add %n tabs to last cut',
+            defaults: [0]
+    };
+
+    this.blocks.addSpaceTabs = {
+            type: 'command',
+            category: 'cnc',
+            spec: 'add tabs with spacing %n',
+            defaults: [0]
+    };
+
 	// more blocks
 
     this.blocks.zoomToFit =
@@ -1638,6 +1657,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('addTabHere'));
         blocks.push(block('addTabLocation'));
+        blocks.push(block('addNumTabs'));
+        blocks.push(block('addSpaceTabs'));
 
     } else if (cat === 'control') {
 
@@ -1739,10 +1760,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             txt.setColor(this.paletteTextColor);
             blocks.push(txt);
             blocks.push('-');
-            blocks.push(watcherToggle('reportThreadCount'));
-            blocks.push(block('reportThreadCount'));
-            blocks.push(block('colorFiltered'));
-            blocks.push(block('reportStackSize'));
             blocks.push(block('reportFrameCount'));
         }
 
@@ -2654,6 +2671,7 @@ Cache.prototype.init = function () {
     this.materials = [];
     this.geometries = { circle: [], jumpArc: [], arc: [], plane: [], meshline: [] };
     this.segments = [];
+    this.tabs = [];
 };
 
 Cache.prototype.clear = function () {

@@ -70,6 +70,7 @@ TurtleShepherd.prototype.setDefaults = function() {
     this.metric = true;
     this.in2mm = 1/25.4;
     this.defaultCutDepth = 0;
+    this.tabHeight = 5;
     //this.materialDisplayNames['Test'] = ['test'];
 }
 TurtleShepherd.prototype.setDefaults();
@@ -95,6 +96,9 @@ TurtleShepherd.prototype.init = function() {
 
     // Machine
     this.machine;
+
+    // Tabs
+    this.tabHeight = 5;
     
     // Bed dimensions
     this.bedLength; // X coordinate range
@@ -669,7 +673,7 @@ TurtleShepherd.prototype.getSpindleSpeed = function() {
 
 // Need to adjust to mm / in !!!
 TurtleShepherd.prototype.getTabHeight = function() {
-    return 5;
+    return this.tabHeight;
 }
 
 TurtleShepherd.prototype.drillIntoTab = function(x, y, cutDepth) {
@@ -852,29 +856,14 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
     // pop off another tab and check it
     let tab = tabsToCheck.pop().pop();
 
-    // DEBUGGING 
-    let S1 = [], S2 = [], dvals = [], xpts = [], ypts = [], strOut = "Tabs left: "+this.copyTabs(tabsToCheck).length+"\n";
-
     for (let i = 0; i < 4; i++) {
                 
         let edge = tab[i],
             u = edge[0],
             v = edge[1],
-            c = [xc, yc];
-    
-        // Get distance from center of circle to line (continue if < r)
-        /*let vc_0 = this.minus(u, c), // vector from center to endpoint of line
-            vc_0proj = this.scalePoint( v, this.dot(vc_0, v)/this.norm(v) ), // projection along direction of line
-            pdist = this.norm(vc_0proj),                     // parallel distance
-            ndist = this.norm( this.minus(vc_0, vc_0proj) ); // normal distance*/
-
-        let uc = this.minus(c, u),
+            c = [xc, yc],
+            uc = this.minus(c, u),
             dist = Math.abs(this.cross(uc, v)) / this.norm(v);
-
-        //pvals[i] = pdist;
-        dvals[i] = dist;
-        xpts[i] = u[0];
-        ypts[i] = u[1];
 
         if (dist > r) {continue};
 
@@ -1069,8 +1058,6 @@ TurtleShepherd.prototype.toGcode = function() {
             gcodeStr += "x: " + edge4[0][0] + " y: " + edge4[0][1] + "\n\n";
         };
     };*/
-
-    //return gcodeStr;
     
     // Units selection and origin return
     gcodeStr += "G0 X0 Y0 Z" + (this.restHeight) + "\n"; // Send to origin to prepare for cut
@@ -1261,14 +1248,14 @@ TurtleShepherd.prototype.negative = function(array) {
 }
 
 TurtleShepherd.prototype.isInTab = function(x, y, tab) {
-    return (this.tabSide(x,y,tab) < 0);
+    return (this.sideOfTab(x,y,tab) < 0);
 }
 
 TurtleShepherd.prototype.isOnTab = function(x, y, tab) {
-    return (this.tabSide(x,y,tab) == 0);
+    return (this.sideOfTab(x,y,tab) == 0);
 }
 
-TurtleShepherd.prototype.tabSide = function(x, y, atab) {
+TurtleShepherd.prototype.sideOfTab = function(x, y, atab) {
     let tabsOfInterest = [];
 
     if (atab) { tabsOfInterest.push([atab]) }
