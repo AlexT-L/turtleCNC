@@ -260,10 +260,10 @@ SpriteMorph.prototype.setSize = function(size) {
 // CNC additions
 //*****************************************
 
-SpriteMorph.prototype.addTabHere = function(l, w) {
+SpriteMorph.prototype.addTabHere = function() {
     let x = this.xPosition(),
         y = this.yPosition();
-    this.addTab(x, y, 90-this.heading, l, w);
+    this.addTab(x, y, 90-this.heading);
 }
 
 SpriteMorph.prototype.addTabLocation = function(x, y, angle) {
@@ -293,12 +293,12 @@ SpriteMorph.prototype.addNumTabs = function(n) {
                 let s0 = (i > 0) ? segments[i-1].s : 0,
                     d = (sTarget - s0)/segments[i].l,
                     x = segments[i].x1 + d*(segments[i].x2 - segments[i].x1),
-                    y = segments[i].y1 + (sTarget/segments[i].l)*(segments[i].y2 - segments[i].y1),
+                    y = segments[i].y1 + d*(segments[i].y2 - segments[i].y1),
                     angle = segments[i].angle;
 
                 this.addTab(x, y, angle);
             }
-
+            
             if (segments[i].type == 'arc') {
                 let s0 = (i > 1) ? segments[i-1].s : 0,
                     xc = segments[i].xc, yc = segments[i].yc, r = segments[i].r,
@@ -311,17 +311,18 @@ SpriteMorph.prototype.addNumTabs = function(n) {
 
                 this.addTab(x, y, angle);
             }
-
+            
             sTarget = (++count + 0.5)*ds;
         }
     }
+    this.cache.clearSegments();
 }
 
 SpriteMorph.prototype.addSpaceTabs = function(delta) {
     if (!this.cache.segments.length) throw new Error("No segments");
 
     let segments = this.cache.segments,
-        pathLength = segments[segments.length].s,
+        pathLength = segments[segments.length-1].s,
         numTabs = Math.max(Math.round(pathLength/delta));
         
     this.addNumTabs(numTabs);
@@ -374,6 +375,15 @@ SpriteMorph.prototype.endCut = function (){
 SpriteMorph.prototype.setCutDepth = function (depth) {
     var stage = this.parentThatIsA(StageMorph);
     stage.turtleShepherd.setCutDepth(depth);
+
+    // Change opacity based on depth if workpiece defined
+    let wp = stage.turtleShepherd.workpiece;
+
+    if (wp) {
+        let h = wp.dimensions.H,
+            opacity = (0.01 + 0.99*depth/h)*100;
+        this.setOpacity(opacity);
+    }
 }
 
 SpriteMorph.prototype.getSafeDepth = function () {
@@ -407,23 +417,21 @@ SpriteMorph.prototype.addMachine = function (name, x, y, z) {
 SpriteMorph.prototype.addTab = function(x, y, angle=false, length, width ) {
     // if tab already exists at (x,y), don't add
     for (let i = 0; i < this.cache.tabs.length; i++) {
-        if (this.cache.tabs[i].x == x && this.cache.tabs[i].y == y) return;
+        if (this.cache.tabs[i].x == x && this.cache.tabs[i].y == y && this.cache.tabs[i].angle == angle) return;
     }
 
     // if there is no tab already at this location, then add tab
-    this.cache.tabs.push({'x':x, 'y':y})
+    this.cache.tabs.push({'x':x, 'y':y, 'angle':angle})
 
     // Set dimensions automatically if not specified
-    let l = this.penSize(),
-        w = 0;
+    let l = 2*this.penSize(),
+        w = this.penSize();
 
     if (length) {
         l = length;
     }
     if (width) {
         w = width;
-    } else {
-        w = l;
     }
 
   var stage = this.parentThatIsA(StageMorph);
@@ -431,7 +439,7 @@ SpriteMorph.prototype.addTab = function(x, y, angle=false, length, width ) {
   if (this.tabLines === null) {
     this.tabLines = new THREE.Group();
   }
-	color = new THREE.Color("rgb(0,0,255)");
+	color = new THREE.Color("rgb(0, 161, 120)");
     opacity = 1;
 
 	var material = this.cache.findMaterial(color,opacity);
@@ -1468,8 +1476,7 @@ SpriteMorph.prototype.initBlocks = function () {
     this.blocks.addTabHere = {
             type: 'command',
             category: 'cnc',
-            spec: 'add tab here l %n w %n',
-            defaults: [0,0]
+            spec: 'add tab here'
     };
 
     this.blocks.addTabLocation = {

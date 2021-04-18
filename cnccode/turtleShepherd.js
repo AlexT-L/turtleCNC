@@ -243,8 +243,8 @@ TurtleShepherd.prototype.getCutDimensions = function() {
 		c = 1;
 		unit = "in";
 	}
-    l= ((this.maxZ - this.minZ)/ this.pixels_per_millimeter * c).toFixed(2).toString();
-    w= ((this.maxX - this.minX)/ this.pixels_per_millimeter * c).toFixed(2).toString();
+    l= ((this.maxX - this.minX)/ this.pixels_per_millimeter * c).toFixed(2).toString();
+    w= ((this.maxY - this.minY)/ this.pixels_per_millimeter * c).toFixed(2).toString();
     //h= ((this.maxY - this.minY)/ this.pixels_per_millimeter * c).toFixed(2).toString();
     h = this.getHeight().toFixed(2).toString();
 	return l + " x " + w + " x " + h + " " + unit;
@@ -328,18 +328,20 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState, depthchange)
 	this.lastY = y2;
 
     // CNC command
-    this.cache.push(
-        {
-            "cmd":"move",
-            "x1":x1,
-            "y1":y1,
-            "x2":x2,
-            "y2":y2,
-            "pendown":penState,
-            "cutdepth":this.cutDepth,
-            "depthchange":depthChange
-        }
-    );
+    if (Math.abs(x2-x1) > 1.01 || Math.abs(y2-y1)> 1.01) {
+        this.cache.push(
+            {
+                "cmd":"move",
+                "x1":x1,
+                "y1":y1,
+                "x2":x2,
+                "y2":y2,
+                "pendown":penState,
+                "cutdepth":this.cutDepth,
+                "depthchange":depthChange
+            }
+        );
+    }
 
     if (warn) {
 		warn = false;
@@ -712,7 +714,7 @@ TurtleShepherd.prototype.getFreePathRecursive = function(x1, y1, x2, y2, cutDept
         x00 = x1, x01 = x2-x1, y00 = y1, y01 = y2-y1; // Cut to be made, parametrized
 
     // pop off another tab and check it
-    var tab = tabsToCheck.pop().pop();
+    let tab = tabsToCheck.pop().pop();
 
     for (let i = 0; i < tab.length; i++) {
         let edge = tab[i],
@@ -765,13 +767,12 @@ TurtleShepherd.prototype.getFreePathRecursive = function(x1, y1, x2, y2, cutDept
         // start (strictly) in tab
         if (this.isInTab(x1, y1, tab)) {
             let output = "G1 Z" + tabCutHeight + "\n" + this.lineCut(xInt, yInt); // Get out of tab
-            //output += ("G1 Z" + (-cutDepth - depthChange*s) + "\n"); // Put spindle down to continue cut
             return  output + this.getFreePathRecursive(xInt, yInt, x2, y2, cutDepth, depthChange*(1-s), tol, this.copyTabs(tabsToCheck)); // Check next segment
         };
         
         // end (strictly) in tab - find free path to tab
         let output = this.getFreePathRecursive(x1, y1, xInt, yInt, cutDepth, depthChange*s, tol, this.copyTabs(tabsToCheck));
-        return "" + output + ("G1 Z" + tabCutHeight + "\n") + this.lineCut(x2, y2);
+        return output + ("G1 Z" + tabCutHeight + "\n") + this.lineCut(x2, y2);
     };
     
     // More than one intersection means we start and end outside of tab
@@ -784,7 +785,7 @@ TurtleShepherd.prototype.getFreePathRecursive = function(x1, y1, x2, y2, cutDept
         // first cut segment
         let xInt = x1 + x01*minS, 
             yInt = y1 + y01*minS;
-        output += this.getFreePathRecursive(x1, x2, xInt, yInt, cutDepth, depthChange*minS, tol, this.copyTabs(tabsToCheck));
+        output += this.getFreePathRecursive(x1, y2, xInt, yInt, cutDepth, depthChange*minS, tol, this.copyTabs(tabsToCheck));
         output += ("G1 Z" + tabCutHeight + "\n");
         
         // traverse tab
@@ -793,7 +794,6 @@ TurtleShepherd.prototype.getFreePathRecursive = function(x1, y1, x2, y2, cutDept
         output += this.lineCut(xInt, yInt);
         
         // second cut segment
-        //output += "G1 Z" + (-cutDepth - depthChange*maxS) + "\n";
         output += this.getFreePathRecursive(xInt, yInt, x2, y2, cutDepth, depthChange*(1-maxS), tol, this.copyTabs(tabsToCheck));
         
         // return cuts
@@ -811,7 +811,7 @@ TurtleShepherd.prototype.lineCut = function(x2, y2, depthchange, currentDepth) {
 
     if (depthChange) {
         depth = Math.min(this.workpiece.dimensions.H, depthChange + depth);
-        return "G1 X" + x2 + " Y" + y2 + " Z" + (-depth) + " //depthChange\n";
+        return "G1 X" + x2 + " Y" + y2 + " Z" + (-depth) + "\n";
     };
     
     return "G1 X" + x2 + " Y" + y2 + "\n";
@@ -876,12 +876,6 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
         let h = u0[1] - yc,
             d = Math.sqrt(r*r - h*h);
 
-        /*// determine if line intersects
-        let s1 = ((xc-d)-u0[0]) / v0[0],
-            s2 = ((xc+d)-u0[0]) / v0[0],
-            phi1 = Math.acos(-d/r) * this.sign(h),
-            phi2 = Math.acos(d/r) * this.sign(h);*/
-
         // rotate intersection points back into global coordinate system
         // then check if they are on line
         let p1 = this.rotatePoint([(xc-d), (yc+h)], c, phi),
@@ -935,7 +929,6 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
                 return part1 + this.arcCutRadius(r, X2, Y2, clockwise, false);
             }
             else {
-                //let part1 = "//946 G1 Z" + (-cutDepth) + "\n";
                 return this.getFreeArcRecursive(xc, yc, r, theta1, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck));
             }
         }
@@ -992,7 +985,6 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
         output += this.arcCutRadius(r, xInt2, yInt2, clockwise, false);
         
         // second cut segment
-        //output += "G1 Z" + (-cutDepth) + "\n";
         output += this.getFreeArcRecursive(xc, yc, r, thetaInt2, theta2, clockwise, cutDepth, depthChange,  tolerance, this.copyTabs(tabsToCheck));
         
         // return cuts
@@ -1068,7 +1060,7 @@ TurtleShepherd.prototype.toGcode = function() {
     let tabDepth = this.workpiece.dimensions.H - this.getTabHeight();
 
     // Read out and store commands from cache
-    for (var i=0; i < this.cache.length; i++) {
+    for (let i=0; i < this.cache.length; i++) {
     
         if(this.cache[i].cmd == "move") {
             if (this.cache[i].pendown) {
@@ -1129,7 +1121,7 @@ TurtleShepherd.prototype.toGcode = function() {
             if (this.drillIntoTab(this.cache[i].x, this.cache[i].y, this.cache[i].cutdepth)) {
                 gcodeStr += "G1 Z" + (-tabDepth) + "\n";
             } else {
-                gcodeStr += "// cutdepth change G1 Z" + (-this.cache[i].cutdepth) + "\n";
+                gcodeStr += "G1 Z" + (-this.cache[i].cutdepth) + "\n";
             }
         } 
         
@@ -1137,12 +1129,12 @@ TurtleShepherd.prototype.toGcode = function() {
             if (this.drillIntoTab(this.cache[i].x, this.cache[i].y, this.cache[i].cutdepth)) {
                 gcodeStr += "G1 Z" + (-tabDepth) + "\n";
             } else {
-                gcodeStr += "// start cut G1 Z" + (-this.cache[i].cutdepth) + "\n";
+                gcodeStr += "G1 Z" + (-this.cache[i].cutdepth) + "\n";
             }
         } 
         
         else if (this.cache[i].cmd == "stopcut") {
-            gcodeStr += "// stop cutG0 Z" + (-this.restHeight) + "\n";
+            gcodeStr += "G0 Z" + this.restHeight + "\n";
         }
     };
     
