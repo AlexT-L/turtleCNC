@@ -391,11 +391,6 @@ SpriteMorph.prototype.getSafeDepth = function () {
     return stage.turtleShepherd.getSafeDepth();
 }
 
-SpriteMorph.prototype.setSpindleSpeed = function (speed) {
-    var stage = this.parentThatIsA(StageMorph);
-    stage.turtleShepherd.setSpindleSpeed(speed);
-}
-
 SpriteMorph.prototype.setWorkpiece = function (material, x, y, z) {
     var stage = this.parentThatIsA(StageMorph);
     stage.turtleShepherd.setupWorkpiece(material, x, y, z);
@@ -1397,15 +1392,6 @@ SpriteMorph.prototype.initBlocks = function () {
         category: 'cnc'
     };
     
-    this.blocks.setSpindleSpeed = 
-    {
-        only: SpriteMorph,
-        type: 'command',
-        spec: 'set spindle speed to %n rpm',
-        category: 'cnc',
-        defaults: [10000]
-    };
-
     this.blocks.setCutDepth = 
     {
         only: SpriteMorph,
@@ -1654,7 +1640,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('setTool'));
         blocks.push(block('getToolSize'));
         blocks.push('-');
-        blocks.push(block('setSpindleSpeed'));
         blocks.push(block('setCutDepth'));
         blocks.push(block('getSafeDepth'));
         blocks.push('-');
