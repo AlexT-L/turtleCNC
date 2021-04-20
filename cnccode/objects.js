@@ -217,7 +217,7 @@ SpriteMorph.prototype.addJumpLine = function(x1, y1, x2, y2) {
 SpriteMorph.prototype.origForward = SpriteMorph.prototype.forward;
 SpriteMorph.prototype.forward = function (steps) {
     var dest,
-        dist = steps; //* this.parent.scale || 0;
+        dist = steps; // this.parent.scale || 0;
         stage = this.parentThatIsA(StageMorph);
         warn = false;
 
