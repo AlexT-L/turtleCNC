@@ -258,7 +258,7 @@ SpriteMorph.prototype.setSize = function(size) {
 };
 
 // CNC additions
-//*****************************************
+/-----------------------------------------
 
 SpriteMorph.prototype.addTabHere = function() {
     let x = this.xPosition(),
@@ -738,7 +738,7 @@ SpriteMorph.prototype.addStopPoint = function() {
     this.reRender();
 };
 
-//**********************************************************
+//---------------------------------------------------
 
 SpriteMorph.prototype.moveforward = function (steps) {
 	var dest,
@@ -1439,7 +1439,7 @@ SpriteMorph.prototype.initBlocks = function () {
         type: 'command',
         category: 'cnc',
         spec: 'workpiece: %material L %n W %n H %n',
-        defaults: ['Aluminum', 0, 0, 0]
+        defaults: ['', 0, 0, 0]
     };
     
     this.blocks.chooseMachine = 

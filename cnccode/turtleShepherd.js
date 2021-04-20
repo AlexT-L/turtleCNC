@@ -29,7 +29,7 @@ materials.displayNames = {
     'Hardwood' : ['hardwood']
 };
 
-materials.chipLoad = {
+materials.ipt = {
     'aluminium' : [0, ((0.13-0.08)/2), ((0.13-0.08)/2), ((0.20-0.15)/2), ((0.26-0.20)/2), ((0.26-0.20)/2)], // done
     'acrylic' : [0, ((0.15-0.08)/2), ((0.26-0.18)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)], // done
     'solid' : [0, ((0.10-0.05)/2), ((0.23-0.15)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.31-0.26)/2)], // done
@@ -42,7 +42,22 @@ materials.chipLoad = {
     'hardwood' : [0, ((0.13-0.08)/2), ((0.28-0.23)/2), ((0.46-0.41)/2), ((0.54-0.48)/2), ((0.54-0.48)/2)], // done
     'steel' : [0, ((0.13-0.08)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)], // done
     'composites' : [0, ((0.13-0.08)/2), ((0.31-0.23)/2), ((0.46-0.41)/2), ((0.64-0.59)/2), ((0.64-0.59)/2)], // done
-    'diameters' : [0, 3, 6, 10, 13, 1000],
+    'diameters' : [0, 3, 6, 10, 13, 150],
+};
+
+materials.sfm = {
+    'aluminium' : [6500],
+    'acrylic' : [800],
+    'solid' : [800],
+    'softplastic' : [800],
+    'hardplastic' : [800],
+    'phenolic' : [800],
+    'Laminate' : [800],
+    'mdf' : [2000],
+    'softwood' : [2000],
+    'hardwood' : [2000],
+    'steel' : [300],
+    'composites' : [300]
 };
 
 // Machines library
@@ -52,8 +67,8 @@ machines = {
     },
     'prover3018grbl' : {
         dimensions: {
-            L : 250,
-            W : 150,
+            L : 260,
+            W : 155,
             H : 35
         }
     }
@@ -68,14 +83,9 @@ TurtleShepherd.prototype.setDefaults = function() {
     this.materialDisplayNames = materials.displayNames;
     this.machines = machines;
     this.metric = true;
-    this.in2mm = 1/25.4;
     this.defaultCutDepth = 0;
-    this.tabHeight = 5;
-    //this.materialDisplayNames['Test'] = ['test'];
 }
 TurtleShepherd.prototype.setDefaults();
-
-//TurtleShepherd.prototype.addMachine('TestMachine', 100, 50, 20);
 
 function TurtleShepherd() {
     this.init();
@@ -83,9 +93,7 @@ function TurtleShepherd() {
 
 TurtleShepherd.prototype.init = function() {
     this.clear();
-    this.pixels_per_millimeter = 5;
-	this.maxLength = 121;
-    this.calcTooLong = true;
+    this.pixels_per_millimeter = 1;
     this.ignoreWarning = false;
 
     // Drilling parameters
@@ -97,9 +105,6 @@ TurtleShepherd.prototype.init = function() {
     // Machine
     this.machine;
 
-    // Tabs
-    this.tabHeight = 5;
-    
     // Bed dimensions
     this.bedLength; // X coordinate range
     this.bedWidth; // Y coordinate range
@@ -129,15 +134,10 @@ TurtleShepherd.prototype.clear = function() {
 	this.penSize = 1;
     this.newPenSize = 0;
     
-    //*********************
+    //----------------------
     // Defaults
     this.restHeight = 5;
-    
-    // Material
-    this.feedRate = 500;
-    this.newSpindleSpeed = false;
-    this.spindleSpeed = 10000;
-
+   
     // tool
     this.tool = false;
     
@@ -146,7 +146,7 @@ TurtleShepherd.prototype.clear = function() {
 
     // Tabs
     this.tabs = [];
-    //*********************
+    //----------------------
     
 };
 
@@ -180,13 +180,17 @@ TurtleShepherd.prototype.loadMachines = function() {
 TurtleShepherd.prototype.getChipLoad = function() {
     if (this.tool && this.workpiece) {
         let mat = this.workpiece.material,
-            diams = this.materials.chipLoad['diameter'],
-            loads = this.materials.chipLoad[mat];
+            diams = materials.ipt['diameters'],
+            loads = materials.ipt[mat],
+            s = this.tool.size;
+
+        if (!this.metric)
+            s = s/mm2in;
 
         for (let i = 1; i < diams.length; i++) {
+        
             let d1 = diams[i-1], d2 = diams[i],
-                l1 = loads[i-1], l2 = loads[i],
-                s = this.tool.size;
+                l1 = loads[i-1], l2 = loads[i];
 
             if ( s > d1 && s < d2 ) {
                 let ds = (s-d1)/(d2-d1),
@@ -196,7 +200,10 @@ TurtleShepherd.prototype.getChipLoad = function() {
             }
         }
         
-        throw new Error("Tool diameter must be between 0 and 10cm");
+        if (this.metric)
+            throw new Error("Tool diameter must be between 0 and 1.5 cm");
+        else
+            throw new Error("Tool diameter must be between 0 and 1/2 in");
     }
     
     throw new Error("Must set tool and material");
@@ -204,7 +211,24 @@ TurtleShepherd.prototype.getChipLoad = function() {
 
 // Need to actually make a function of material/drillbit !!!!
 TurtleShepherd.prototype.getSafeDepth = function() {
-    return 2;
+    if (this.tool)
+        return 2*this.tool.size;
+    if (this.metric)
+        return 5;
+    return 0.2;
+}
+
+TurtleShepherd.prototype.getRangeWarning = function() {
+    let errStr = "Warning: Cut area exceeds bed dimensions";
+
+    if ((this.maxX-this.minX) > this.bedLength)
+        return errStr;
+    if ((this.maxY-this.minY) > this.bedWidth)
+        return errStr;
+    if ((this.maxZ-this.minZ) > this.bedHeight)
+        return errStr;
+
+    return "";
 }
 
 TurtleShepherd.prototype.toggleMetric = function() {
@@ -353,7 +377,7 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState, depthchange)
 
 
 // CNC addition
-//***********************************************************
+//--------------------------------------------------------------
 
 TurtleShepherd.prototype.arcTo = function(x1, y1, r, theta1, theta2, clockwise, penState, depthchange ) {
     // Set depthChange to zero if undefined
@@ -363,6 +387,19 @@ TurtleShepherd.prototype.arcTo = function(x1, y1, r, theta1, theta2, clockwise, 
     } else { depthChange = depthchange};
 
 	warn = false;
+
+    let th1 = (Math.PI / 180) * theta1,
+        th2 = (Math.PI / 180) * theta2,
+        xc = x1 - r*Math.cos(th1),
+        yc = y1 - r*Math.sin(th1),
+        //th1abs = Math.abs(th1),
+        //th2abs = Math.abs(th2),
+        //thmax = Math.min(th1abs,th2abs),
+        //thmin = PI + Math.min(Math.abs(th1abs-PI),Math.abs(th2abs-PI)),
+        xmax = xc + r,//*Math.cos(thmax), 
+        xmin = xc - r,//*Math.cos(thmin),
+        ymax = yc + r, ymin = yc - r;
+
 
     if (this.steps === 0) {
         this.initX = x1;
@@ -376,12 +413,12 @@ TurtleShepherd.prototype.arcTo = function(x1, y1, r, theta1, theta2, clockwise, 
     if (this.newPenSize) {
 		this.pushPenSizeNow();
 	}
-    /*
-	if (x2 < this.minX) this.minX = x2;
-	if (x2 > this.maxX) this.maxX = x2;
-	if (y2 < this.minY) this.minY = y2;
-	if (y2 > this.maxY) this.maxY = y2;
-    */
+    
+	if (xmin < this.minX) this.minX = xmin;
+	if (xmax > this.maxX) this.maxX = xmax;
+	if (ymin < this.minY) this.minY = ymin;
+	if (ymax > this.maxY) this.maxY = ymax;
+    
     this.l = this.maxX - this.minX;
     this.w = this.maxY - this.minY;
     this.h = this.maxY - this.minY;
@@ -394,10 +431,7 @@ TurtleShepherd.prototype.arcTo = function(x1, y1, r, theta1, theta2, clockwise, 
 	//this.lastY = y2;
 
     // CNC command
-    let radians = (Math.PI / 180) * theta1,
-        xc = x1 - r*Math.cos(radians),
-        yc = y1 - r*Math.sin(radians);
-
+    
     this.cache.push(
         {
             "cmd":"arc",
@@ -443,6 +477,9 @@ TurtleShepherd.prototype.stopCut = function () {
 }
 
 TurtleShepherd.prototype.setCutDepth = function(s) {
+    if (s > this.maxZ)
+        this.maxZ = s;
+
 	n = s;
 	o = this.cutDepth;
 
@@ -478,36 +515,6 @@ TurtleShepherd.prototype.getToolSize = function() {
 
     return this.tool.size;
 }
-
-TurtleShepherd.prototype.setSpindleSpeed = function(s) {
-	this.newSpindleSpeed = s;
-};
-
-TurtleShepherd.prototype.pushSpindleSpeedNow = function() {
-	n = this.newSpindleSpeed;
-	o = this.spindleSpeed;
-
-    this.spindleSpeed = newSpindleSpeed;
-    
-	if (n == o) {
-		this.newSpindleSpeed = false;
-		return;
-	}
-    if (this.penDown) {
-        this.cache.push(
-            {
-                "cmd":"spindlespeed",
-                "spindlespeed": n
-            }
-        );
-    }
-    
-    this.newSpindleSpeed = false;
-};
-
-TurtleShepherd.prototype.setSpindleSpeed = function(s) {
-	this.newSpindleSpeed = s;
-};
 
 TurtleShepherd.prototype.setupWorkpiece = function(material, x, y, z) {
 
@@ -623,12 +630,10 @@ TurtleShepherd.prototype.getRangeWarning = function() {
         return warnString.concat("x and has been truncated");
     } else if (this.w > this.bedWidth) {
         return warnString.concat("y and has been truncated");
-    } else if (this.h > this.bedHeight) {
-        return warnString.concat("z and has been truncated");
     }
     return "";
 };
-//***********************************************************
+//----------------------------------------------------------------
 
 
 TurtleShepherd.prototype.setPenSize = function(s) {
@@ -666,16 +671,35 @@ TurtleShepherd.prototype.undoStep = function() {
 
 // Need to write function !!!
 TurtleShepherd.prototype.getFeedRate = function() {
-    return 1000;
+    if (!this.workpiece)
+        throw new Error("No material selected");
+
+    let ipt = this.getChipLoad(),
+        teeth = this.tool.flutes,
+        rpm = this.getSpindleSpeed();
+
+    return rpm*ipt*teeth;
 };
 
 TurtleShepherd.prototype.getSpindleSpeed = function() {
-    return 1000;
+    if (!this.workpiece)
+        throw new Error("No material selected");
+
+    let mat = this.workpiece.material,
+        sfm = materials.sfm[mat];//,
+        diam = this.tool.size;
+
+    if (!this.metric) {
+        return(sfm*mm2in/(PI*diam));
+    }
+    return sfm/(PI*diam);
 };
 
 // Need to adjust to mm / in !!!
 TurtleShepherd.prototype.getTabHeight = function() {
-    return this.tabHeight;
+    if (this.metric)
+        return 5;
+    return 0.2;
 }
 
 TurtleShepherd.prototype.drillIntoTab = function(x, y, cutDepth) {
@@ -847,7 +871,7 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
     let endDepth = depthChange ? (cutDepth+ depthChange) : 0;
 
     if (!tabsToCheck.length) { // No tabs, we're fine
-        return "//843 No tabs G1 Z" + (-cutDepth) + "\n" + this.arcCutRadius(r, X2, Y2, clockwise, endDepth);
+        return "G1 Z" + (-cutDepth) + "\n" + this.arcCutRadius(r, X2, Y2, clockwise, endDepth);
     };
     
     // Check first tab
@@ -925,7 +949,7 @@ TurtleShepherd.prototype.getFreeArcRecursive = function(xc, yc, r, theta1, theta
                 midy = Y1 + (Y2-Y1)/2;
 
             if (this.isInTab(midx, midy, tab) || this.isOnTab(midx, midy, tab)) { // inside tab - move up and cut from safe height
-                let part1 = "//942 Completely in tab\nG1 Z" + tabCutHeight + "\n";
+                let part1 = "G1 Z" + tabCutHeight + "\n";
                 return part1 + this.arcCutRadius(r, X2, Y2, clockwise, false);
             }
             else {
@@ -1031,7 +1055,7 @@ TurtleShepherd.prototype.toGcode = function() {
     } else {
         gcodeStr += "G20\n"; // set units to mm
     }
-    
+    gcodeStr += "material: " + this.workpiece.material + "\n";
     // Debugging info
     /*
     let temp = this.copyTabs(this.copyTabs());

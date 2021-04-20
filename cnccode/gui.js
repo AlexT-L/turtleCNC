@@ -1244,7 +1244,7 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     element.columns = 2;
     element.newColumn = 1;
     elements.push(element);
-
+    */
      // exceeds bed dimensions
     elements.push('');
     element = new StringMorph();
@@ -1255,13 +1255,13 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     element.columns = 2;
     element.newColumn = 2;
     elements.push(element);
-    /*
+    
      // density warning
     elements.push('');
     element = new StringMorph("");
     element.newLines = 2;
     elements.push(element);
-    */
+    
 
     var zoomInButton = new PushButtonMorph(
             null,
