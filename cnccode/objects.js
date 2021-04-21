@@ -258,7 +258,7 @@ SpriteMorph.prototype.setSize = function(size) {
 };
 
 // CNC additions
-/-----------------------------------------
+//#############################################
 
 SpriteMorph.prototype.addTabHere = function() {
     let x = this.xPosition(),
@@ -738,7 +738,7 @@ SpriteMorph.prototype.addStopPoint = function() {
     this.reRender();
 };
 
-//---------------------------------------------------
+//######################################################
 
 SpriteMorph.prototype.moveforward = function (steps) {
 	var dest,

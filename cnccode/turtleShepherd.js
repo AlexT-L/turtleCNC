@@ -1,10 +1,17 @@
 /*
-    TurtleShepherd
+    TurtleShepherd for TurtleCNC
     ------------------------------------------------------------------
-    turltestich's embroidery intelligence agency
-    Embroidery function for Javscript
+    Gcode creation interface for TurtleCNC environment
     ------------------------------------------------------------------
-    Copyright (C) 2016-2017 Michael Aschauer
+    Copyright (C) 2021 Alex Taylor-Lash
+
+    Modified from:
+        TurtleShepherd
+        ------------------------------------------------------------------
+        turltestich's embroidery intelligence agency
+        Embroidery function for Javscript
+        ------------------------------------------------------------------
+        Copyright (C) 2016-2017 Michael Aschauer
 
 */
 
@@ -109,7 +116,6 @@ TurtleShepherd.prototype.init = function() {
     this.bedLength; // X coordinate range
     this.bedWidth; // Y coordinate range
     this.bedHeight; // Z coordinate range
-    
 };
 
 TurtleShepherd.prototype.clear = function() {
@@ -211,22 +217,25 @@ TurtleShepherd.prototype.getChipLoad = function() {
 
 // Need to actually make a function of material/drillbit !!!!
 TurtleShepherd.prototype.getSafeDepth = function() {
-    if (this.tool)
-        return 2*this.tool.size;
-    if (this.metric)
-        return 5;
+    //if (this.tool)
+    //    return Math.min(2*this.tool.size, 10);
+    //if (this.metric)
+    //    return 5;
     return 0.2;
 }
 
 TurtleShepherd.prototype.getRangeWarning = function() {
     let errStr = "Warning: Cut area exceeds bed dimensions";
 
-    if ((this.maxX-this.minX) > this.bedLength)
-        return errStr;
-    if ((this.maxY-this.minY) > this.bedWidth)
-        return errStr;
-    if ((this.maxZ-this.minZ) > this.bedHeight)
-        return errStr;
+    if (!this.ignoreWarning) {
+
+        if ((this.maxX-this.minX) > this.bedLength)
+            return errStr;
+        if ((this.maxY-this.minY) > this.bedWidth)
+            return errStr;
+        if ((this.maxZ-this.minZ) > this.bedHeight)
+            return errStr;
+    };
 
     return "";
 }
@@ -264,7 +273,7 @@ TurtleShepherd.prototype.getCutDimensions = function() {
 		c = 1;
 		unit = "mm";
 	} else {
-		c = 1;
+		c = 0.01;
 		unit = "in";
 	}
     l= ((this.maxX - this.minX)/ this.pixels_per_millimeter * c).toFixed(2).toString();
@@ -614,23 +623,27 @@ TurtleShepherd.prototype.addTab = function(x, y, l, w, angle) {
 TurtleShepherd.prototype.getWorkpieceWarning = function() {
     var warnString = "Warning: cut exceeds workpiece dimensions in ",
         dim = this.workpiece.dimensions;
-    if (this.l > dim.L) {
-        return warnString.concat("x");
-    } else if (this.w > dim.W) {
-        return warnString.concat("y");
-    } else if (this.h > dim.H) {
-        return warnString.concat("z");
-    }
+    if (!this.ignoreWarning) {
+        if (this.l > dim.L) {
+            return warnString.concat("x");
+        } else if (this.w > dim.W) {
+            return warnString.concat("y");
+        } else if (this.h > dim.H) {
+            return warnString.concat("z");
+        }
+    };
     return "";
 };
 
 TurtleShepherd.prototype.getRangeWarning = function() {
     var warnString = "Warning: cut exceeds workbed dimensions in ";
-    if (this.l > this.bedLength) {
-        return warnString.concat("x and has been truncated");
-    } else if (this.w > this.bedWidth) {
-        return warnString.concat("y and has been truncated");
-    }
+    if (!this.ignoreWarning) {
+        if (this.l > this.bedLength) {
+            return warnString.concat("x");
+        } else if (this.w > this.bedWidth) {
+            return warnString.concat("y");
+        }
+    };
     return "";
 };
 //----------------------------------------------------------------
@@ -1047,13 +1060,13 @@ TurtleShepherd.prototype.arcCutRadius = function(r, x2, y2, Clockwise, endDepth)
 
 TurtleShepherd.prototype.toGcode = function() {    
     var gcodeStr = "$X\n"; // Unlock
-    gcodeStr += "$H\n"; // Send to Home
+    /*gcodeStr += "$H\n"; // Send to Home
     
     // Set units of output
     if (this.isMetric()) {
         gcodeStr += "G21\n"; // set units to mm
     } else {
-        gcodeStr += "G20\n"; // set units to mm
+        gcodeStr += "G20\n"; // set units to inches
     }
     gcodeStr += "material: " + this.workpiece.material + "\n";
     // Debugging info
@@ -1074,7 +1087,7 @@ TurtleShepherd.prototype.toGcode = function() {
             gcodeStr += "x: " + edge4[0][0] + " y: " + edge4[0][1] + "\n\n";
         };
     };*/
-    
+    /*
     // Units selection and origin return
     gcodeStr += "G0 X0 Y0 Z" + (this.restHeight) + "\n"; // Send to origin to prepare for cut
     gcodeStr += "G1 F" + this.getFeedRate() + "\n"; // Set feed rate
@@ -1087,13 +1100,14 @@ TurtleShepherd.prototype.toGcode = function() {
     for (let i=0; i < this.cache.length; i++) {
     
         if(this.cache[i].cmd == "move") {
+            let x1 = this.metric ? this.cache[i].x1 : this.cache[i].x1/100,
+                y1 = this.metric ? this.cache[i].x2 : this.cache[i].x2/100,
+                x2 = this.metric ? this.cache[i].y1 : this.cache[i].y1/100,
+                y2 = this.metric ? this.cache[i].y2 : this.cache[i].y2/100,
+                cutDepth = this.cache[i].cutdepth,
+                depthChange = this.cache[i].depthchange;
+
             if (this.cache[i].pendown) {
-                let x1 = this.cache[i].x1,
-                    y1 = this.cache[i].y1,
-                    x2 = this.cache[i].x2,
-                    y2 = this.cache[i].y2,
-                    cutDepth = this.cache[i].cutdepth,
-                    depthChange = this.cache[i].depthchange;
                     
                 if ( (cutDepth > tabDepth) || (cutDepth + depthChange > tabDepth) ) {
                     gcodeStr += this.getFreeLine(x1, y1, x2, y2, cutDepth, depthChange);
@@ -1101,14 +1115,14 @@ TurtleShepherd.prototype.toGcode = function() {
                     gcodeStr += "G1 X" + x2 + " Y" + y2 + " Z" + (-cutDepth-depthChange) + "\n";
                 }
             } else {
-                gcodeStr += "G0 X" + (this.cache[i].x2) + " Y" + (this.cache[i].y2) + "\n";
+                gcodeStr += "G0 X" + (x2) + " Y" + (y2) + "\n";
             }
         } 
 
         else if (this.cache[i].cmd == "arc") {
-            let xc = this.cache[i].xc,
-                yc = this.cache[i].yc,
-                r = this.cache[i].r,
+            let xc = this.metric ? this.cache[i].xc : this.cache[i].xc/100,
+                yc = this.metric ? this.cache[i].yc : this.cache[i].yc/100,
+                r =  this.metric ? this.cache[i].r  : this.cache[i].r/100,
                 theta1 = this.cache[i].theta1,
                 theta2 = this.cache[i].theta2,
                 clockwise = this.cache[i].clockwise,
@@ -1164,7 +1178,7 @@ TurtleShepherd.prototype.toGcode = function() {
     
     gcodeStr += "$H\n";
     gcodeStr += "M30";
-    
+    */
     return gcodeStr;
 };
 

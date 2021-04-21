@@ -1324,63 +1324,6 @@ IDE_Morph.prototype.createStatusDisplay = function () {
     downloadGcodeButton.newColumn = 2;
     elements.push(downloadGcodeButton);
 
-    /*
-    var downloadSVGButton = new PushButtonMorph(
-        null,
-        function () { myself.downloadSVG(); },
-        'Export as SVG'
-    );
-    downloadSVGButton.columns = 6;
-    downloadSVGButton.newColumn = 2;
-    elements.push(downloadSVGButton);
-
-	var ignoreColorsButton = new ToggleMorph(
-		'checkbox',
-		null,
-		function () {
-			stage.turtleShepherd.toggleIgnoreColors();
-		},
-		'Ignore colors during export',
-		function () {
-			return stage.turtleShepherd.getIgnoreColors();
-		});
-
-    ignoreColorsButton.newLines = 1.7;
-    elements.push(ignoreColorsButton);
-
-    var downloadEXPButton = new PushButtonMorph(
-        null,
-        function () { myself.downloadEXP(); },
-        'Export as Melco/EXP'
-    );
-    downloadEXPButton.newLines = 1.7;
-    elements.push(downloadEXPButton);
-
-    var downloadDSTButton = new PushButtonMorph(
-        null,
-        function () { myself.downloadDST(); },
-        'Export as Tajima/DST'
-    );
-    downloadDSTButton.newLines = 2.7;
-    elements.push(downloadDSTButton);
-
-    if (DEBUG) {
-		elements.push(' DEBUG MODE: true');
-		element = new StringMorph("");
-
-		element.newLines = 1.2;
-		elements.push(element);
-		elements.push(' RENDERER: ');
-		element = new StringMorph();
-		element.update = function () {
-			this.text = stage.renderer_status_msg;
-		};
-		element.newLines = 1;
-		elements.push(element);
-		elements.push('  ');
-	}
-    */
-
     elements.forEach(function(each) { myself.statusDisplay.addElement(each); });
 };
 
@@ -1461,47 +1404,6 @@ IDE_Morph.prototype.downloadGcode = function() {
     blob = new Blob([GcodeStr], {type: 'text/plain;charset=utf-8'});
     saveAs(blob, (this.projectName ? this.projectName : 'turtlecnc') + '.gcode');
 };
-
-/*
-// SVG export
-IDE_Morph.prototype.downloadSVG = function() {
-    svgStr = this.stage.turtleShepherd.toSVG();
-    blob = new Blob([svgStr], {type: 'text/plain;charset=utf-8'});
-    saveAs(blob, (this.projectName ? this.projectName : 'turtlecnc') + '.svg');
-};
-
-// EXP export
-IDE_Morph.prototype.downloadEXP = function() {
-    expUintArr = this.stage.turtleShepherd.toEXP();
-    blob = new Blob([expUintArr], {type: 'application/octet-stream'});
-    saveAs(blob, (this.projectName ? this.projectName : 'turtlecnc') + '.exp');
-};
-
-// DST export
-IDE_Morph.prototype.downloadDST = function() {
-	var name = this.projectName ? this.projectName : 'turtlecnc';
-    expUintArr = this.stage.turtleShepherd.toDST(name);
-    blob = new Blob([expUintArr], {type: 'application/octet-stream'});
-    saveAs(blob, name + '.dst');
-};
-
-// PNG export
-IDE_Morph.prototype.downloadPNG = function() {
-	var name = this.projectName ? this.projectName : 'turtlecnc';
-
-	dataURL = this.stage.turtleShepherd.toPNG(name);
-	var binary = atob( dataURL.substr( dataURL.indexOf(',') + 1 ) ),
-        i = binary.length,
-        view = new Uint8Array(i);
-
-    while (i--) {
-        view[i] = binary.charCodeAt(i);
-    }
-
-    blob = new Blob([view], {type: 'image/png'});
-    saveAs(blob, name + '.png');
-};
-*/
 
 IDE_Morph.prototype.setProjectName = function (string) {
 	if (string.replace(/['"]/g, '') != this.projectName || SnapCloud.username != this.creator) {
