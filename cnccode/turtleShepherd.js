@@ -204,7 +204,7 @@ TurtleShepherd.prototype.getChipLoad = function() {
 
                 return dl;
             }
-        }
+        };
         
         if (this.metric)
             throw new Error("Tool diameter must be between 0 and 1.5 cm");
@@ -217,11 +217,11 @@ TurtleShepherd.prototype.getChipLoad = function() {
 
 // Need to actually make a function of material/drillbit !!!!
 TurtleShepherd.prototype.getSafeDepth = function() {
-    //if (this.tool)
-    //    return Math.min(2*this.tool.size, 10);
-    //if (this.metric)
-    //    return 5;
-    return 0.2;
+    if (this.tool)
+        return Math.min(this.tool.size, 10);
+    if (this.metric)
+        return 5;
+    return 2;
 }
 
 TurtleShepherd.prototype.getRangeWarning = function() {
@@ -1060,7 +1060,7 @@ TurtleShepherd.prototype.arcCutRadius = function(r, x2, y2, Clockwise, endDepth)
 
 TurtleShepherd.prototype.toGcode = function() {    
     var gcodeStr = "$X\n"; // Unlock
-    /*gcodeStr += "$H\n"; // Send to Home
+    gcodeStr += "$H\n"; // Send to Home
     
     // Set units of output
     if (this.isMetric()) {
@@ -1087,7 +1087,7 @@ TurtleShepherd.prototype.toGcode = function() {
             gcodeStr += "x: " + edge4[0][0] + " y: " + edge4[0][1] + "\n\n";
         };
     };*/
-    /*
+    
     // Units selection and origin return
     gcodeStr += "G0 X0 Y0 Z" + (this.restHeight) + "\n"; // Send to origin to prepare for cut
     gcodeStr += "G1 F" + this.getFeedRate() + "\n"; // Set feed rate
@@ -1101,11 +1101,13 @@ TurtleShepherd.prototype.toGcode = function() {
     
         if(this.cache[i].cmd == "move") {
             let x1 = this.metric ? this.cache[i].x1 : this.cache[i].x1/100,
-                y1 = this.metric ? this.cache[i].x2 : this.cache[i].x2/100,
-                x2 = this.metric ? this.cache[i].y1 : this.cache[i].y1/100,
+                y1 = this.metric ? this.cache[i].y1 : this.cache[i].y1/100,
+                x2 = this.metric ? this.cache[i].x2 : this.cache[i].x2/100,
                 y2 = this.metric ? this.cache[i].y2 : this.cache[i].y2/100,
                 cutDepth = this.cache[i].cutdepth,
                 depthChange = this.cache[i].depthchange;
+
+            gcodeStr += "line: x1="+x1+", y1="+y1+", x2="+x2+", y2="+y2+"\n";
 
             if (this.cache[i].pendown) {
                     
@@ -1178,7 +1180,7 @@ TurtleShepherd.prototype.toGcode = function() {
     
     gcodeStr += "$H\n";
     gcodeStr += "M30";
-    */
+    
     return gcodeStr;
 };
 

@@ -1,3 +1,6 @@
+// modified turtleCNC blocks
+// adapted from turtleStitch blocks.js file
+
 SymbolMorph.prototype.names.push('largeStage');
 SymbolMorph.prototype.names.push('zoomToFit');
 

@@ -1,5 +1,6 @@
 /* Sprite */
 // modified SpriteMorph turtleCNC functions
+// adapted from turtleStitch objects.js file
 
 
 SpriteMorph.prototype.categories =
