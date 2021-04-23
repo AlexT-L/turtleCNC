@@ -37,18 +37,18 @@ materials.displayNames = {
 };
 
 materials.ipt = {
-    'aluminium' : [0, ((0.13-0.08)/2), ((0.13-0.08)/2), ((0.20-0.15)/2), ((0.26-0.20)/2), ((0.26-0.20)/2)], // done
-    'acrylic' : [0, ((0.15-0.08)/2), ((0.26-0.18)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)], // done
-    'solid' : [0, ((0.10-0.05)/2), ((0.23-0.15)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.31-0.26)/2)], // done
-    'softplastic' : [0, ((0.15-0.08)/2), ((0.26-0.18)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)], // done
-    'hardplastic' : [0, ((0.10-0.05)/2), ((0.23-0.15)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.31-0.26)/2)], // done
-    'phenolic' : [0, ((0.13-0.10)/2), ((0.31-0.28)/2), ((0.46-0.43)/2), ((0.66-0.61)/2), ((0.66-0.61)/2)], // done
-    'Laminate' : [0, ((0.13-0.08)/2), ((0.28-0.23)/2), ((0.46-0.41)/2), ((0.54-0.48)/2), ((0.54-0.48)/2)], // done
-    'mdf' : [0, ((0.18-0.10)/2), ((0.41-0.33)/2), ((0.59-0.51)/2), ((0.69-0.64)/2), ((0.69-0.64)/2)], // done
-    'softwood' : [0, ((0.15-0.10)/2), ((0.33-0.28)/2), ((0.51-0.43)/2), ((0.59-0.54)/2), ((0.59-0.54)/2)], //done
-    'hardwood' : [0, ((0.13-0.08)/2), ((0.28-0.23)/2), ((0.46-0.41)/2), ((0.54-0.48)/2), ((0.54-0.48)/2)], // done
-    'steel' : [0, ((0.13-0.08)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)], // done
-    'composites' : [0, ((0.13-0.08)/2), ((0.31-0.23)/2), ((0.46-0.41)/2), ((0.64-0.59)/2), ((0.64-0.59)/2)], // done
+    'aluminium' : [0, ((0.13-0.08)/2), ((0.13-0.08)/2), ((0.20-0.15)/2), ((0.26-0.20)/2), ((0.26-0.20)/2)], 
+    'acrylic' : [0, ((0.15-0.08)/2), ((0.26-0.18)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)],
+    'solid' : [0, ((0.10-0.05)/2), ((0.23-0.15)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.31-0.26)/2)],
+    'softplastic' : [0, ((0.15-0.08)/2), ((0.26-0.18)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)],
+    'hardplastic' : [0, ((0.10-0.05)/2), ((0.23-0.15)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.31-0.26)/2)],
+    'phenolic' : [0, ((0.13-0.10)/2), ((0.31-0.28)/2), ((0.46-0.43)/2), ((0.66-0.61)/2), ((0.66-0.61)/2)],
+    'Laminate' : [0, ((0.13-0.08)/2), ((0.28-0.23)/2), ((0.46-0.41)/2), ((0.54-0.48)/2), ((0.54-0.48)/2)],
+    'mdf' : [0, ((0.18-0.10)/2), ((0.41-0.33)/2), ((0.59-0.51)/2), ((0.69-0.64)/2), ((0.69-0.64)/2)],
+    'softwood' : [0, ((0.15-0.10)/2), ((0.33-0.28)/2), ((0.51-0.43)/2), ((0.59-0.54)/2), ((0.59-0.54)/2)],
+    'hardwood' : [0, ((0.13-0.08)/2), ((0.28-0.23)/2), ((0.46-0.41)/2), ((0.54-0.48)/2), ((0.54-0.48)/2)],
+    'steel' : [0, ((0.13-0.08)/2), ((0.26-0.20)/2), ((0.31-0.26)/2), ((0.41-0.31)/2), ((0.41-0.31)/2)],
+    'composites' : [0, ((0.13-0.08)/2), ((0.31-0.23)/2), ((0.46-0.41)/2), ((0.64-0.59)/2), ((0.64-0.59)/2)],
     'diameters' : [0, 3, 6, 10, 13, 150],
 };
 
@@ -215,7 +215,6 @@ TurtleShepherd.prototype.getChipLoad = function() {
     throw new Error("Must set tool and material");
 }
 
-// Need to actually make a function of material/drillbit !!!!
 TurtleShepherd.prototype.getSafeDepth = function() {
     if (this.tool)
         return Math.min(this.tool.size, 10);
@@ -242,9 +241,6 @@ TurtleShepherd.prototype.getRangeWarning = function() {
 
 TurtleShepherd.prototype.toggleMetric = function() {
     return this.metric = !this.metric;
-
-    // Convert defaults to metric or imperial
-
 };
 
 TurtleShepherd.prototype.setMetric = function(b) {
@@ -278,7 +274,6 @@ TurtleShepherd.prototype.getCutDimensions = function() {
 	}
     l= ((this.maxX - this.minX)/ this.pixels_per_millimeter * c).toFixed(2).toString();
     w= ((this.maxY - this.minY)/ this.pixels_per_millimeter * c).toFixed(2).toString();
-    //h= ((this.maxY - this.minY)/ this.pixels_per_millimeter * c).toFixed(2).toString();
     h = this.getHeight().toFixed(2).toString();
 	return l + " x " + w + " x " + h + " " + unit;
 };
@@ -384,10 +379,6 @@ TurtleShepherd.prototype.moveTo= function(x1, y1, x2, y2, penState, depthchange)
 	}
 };
 
-
-// CNC addition
-//--------------------------------------------------------------
-
 TurtleShepherd.prototype.arcTo = function(x1, y1, r, theta1, theta2, clockwise, penState, depthchange ) {
     // Set depthChange to zero if undefined
     let depthChange;
@@ -435,9 +426,6 @@ TurtleShepherd.prototype.arcTo = function(x1, y1, r, theta1, theta2, clockwise, 
     if (penState) {
         this.steps++;
     }
-
-	//this.lastX = x2;
-	//this.lastY = y2;
 
     // CNC command
     
@@ -682,7 +670,6 @@ TurtleShepherd.prototype.undoStep = function() {
 
 // G-code Extraction
 
-// Need to write function !!!
 TurtleShepherd.prototype.getFeedRate = function() {
     if (!this.workpiece)
         throw new Error("No material selected");
@@ -708,7 +695,6 @@ TurtleShepherd.prototype.getSpindleSpeed = function() {
     return sfm/(PI*diam);
 };
 
-// Need to adjust to mm / in !!!
 TurtleShepherd.prototype.getTabHeight = function() {
     if (this.metric)
         return 5;
@@ -1369,6 +1355,7 @@ TurtleShepherd.prototype.isNearTab = function(x, y, atab) {
     return 1;
 }
 
+// creates deep copy of tabs array
 TurtleShepherd.prototype.copyTabs = function(origTabs) {
     let tabs = origTabs;
     if (origTabs === undefined) {tabs = this.tabs};
