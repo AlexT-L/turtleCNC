@@ -690,14 +690,14 @@ TurtleShepherd.prototype.getSpindleSpeed = function() {
         diam = this.tool.size;
 
     if (!this.metric) {
-        return(sfm*mm2in/(PI*diam));
+        return(sfm*mm2in);
     }
-    return sfm/(PI*diam);
+    return sfm;
 };
 
 TurtleShepherd.prototype.getTabHeight = function() {
     if (this.metric)
-        return 5;
+        return 2;
     return 0.2;
 }
 
@@ -1092,8 +1092,6 @@ TurtleShepherd.prototype.toGcode = function() {
                 y2 = this.metric ? this.cache[i].y2 : this.cache[i].y2/100,
                 cutDepth = this.cache[i].cutdepth,
                 depthChange = this.cache[i].depthchange;
-
-            gcodeStr += "line: x1="+x1+", y1="+y1+", x2="+x2+", y2="+y2+"\n";
 
             if (this.cache[i].pendown) {
                     
